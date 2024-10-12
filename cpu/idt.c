@@ -10,7 +10,7 @@ extern void idt_flush(uint32_t);
 
 void init_idt()
 {
-    kprint("setting up Interrupt Descriptor Table...");
+    kprint("Setting up Interrupt Descriptor Table...");
     idt_ptr.limit = sizeof(struct idt_entry_struct) * 256 - 1;
     idt_ptr.base = (uint32_t) &idt_entries;
     memset(&idt_entries, 0, sizeof(struct idt_entry_struct) * 256);
