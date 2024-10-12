@@ -1,4 +1,5 @@
 #include <io/iotools.h>
+#include <stdint.h>
 
 unsigned char   port_byte_in(unsigned short port)
 {
@@ -62,4 +63,14 @@ void	memcpy(int *src, int *dest, int bytes)
 		dest[i] = src[i];
 		i++;
 	}
+}
+
+void memset(void *dest, char val, uint32_t count)
+{
+    char *temp = (char*)dest;
+    for (; count != 0; count--)
+    {
+        *temp++=val;
+    }
+
 }

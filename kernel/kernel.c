@@ -1,10 +1,13 @@
+#include <vga.h>
+#include <cpu/gdt.h>
+#include <io/idt.h>
+
 void kentr(void)
 {
-    char *vidptr = (char*)0xb8000;
-    vidptr[0] = 'H';
-    vidptr[2] = 'e';
-    vidptr[4] = 'l';
-    vidptr[6] = 'l';
-    vidptr[8] = 'o';
+    clear_screen();
+    init_gdt();
+    init_idt();
+    kprint("Origin Aster (Aster kernel)\n\nTrying to divide by zero... he-he-he!!\nkprint(1/0);");
+    kprint(1/0);
     return;
 }

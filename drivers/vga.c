@@ -26,6 +26,14 @@ void	kprint(uint8_t *str)
 	}
 }
 
+void kprintc(uint8_t *str, uint8_t attr)
+{
+    while (*str)
+	{
+		putchar(*str, attr);
+		str++;
+	}
+}
 void	putchar(uint8_t character, uint8_t attribute_byte)
 {
 	/* Более высокоуровневая функция печати символа */
@@ -89,7 +97,8 @@ void	clear_screen()
 		write('\0', WHITE_ON_BLACK, offset);
 		offset += 2;
 	}
-	set_cursor(0);
+	set_cursor(0);//                                                                         "
+    kprintc("                                 Origin Aster                                   \n", 0x70);
 }
 
 void	write(uint8_t character, uint8_t attribute_byte, uint16_t offset)

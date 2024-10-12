@@ -20,6 +20,7 @@
 #define REG_SCREEN_DATA 0x3d5	// а этот порт для самих данных
 
 void	kprint(uint8_t *str);
+void kprintc(uint8_t *str, uint8_t attr);
 void	putchar(uint8_t character, uint8_t attribute_byte);
 void	clear_screen();
 void	write(uint8_t character, uint8_t attribute_byte, uint16_t offset);
