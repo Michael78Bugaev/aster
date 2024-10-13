@@ -96,7 +96,7 @@ void handler(struct InterruptRegisters *regs)
             {
                 kprint("\n");
                 input[0] = '\0';
-                irq_uninstall_handler(1);
+                //irq_uninstall_handler(1);
             }
             else;    
                 

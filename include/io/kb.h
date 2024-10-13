@@ -1,3 +1,6 @@
+#ifndef KB_H
+#define KB_H
+
 #include <io/idt.h>
 
 #define KEY_A 0x1E
@@ -84,3 +87,5 @@ void agent_handler(struct InterruptRegisters *regs);
 
 char *get_string();
 char *agent_get_string();
+
+#endif

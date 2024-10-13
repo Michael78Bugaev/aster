@@ -1,3 +1,6 @@
+#ifndef IDT_H
+#define IDT_H
+
 #include <stdint.h>
 #include <io/iotools.h>
 
@@ -86,3 +89,5 @@ void isr_handler(struct InterruptRegisters* resgs);
 void irq_install_handler(int irq, void(*handler)(struct InterruptRegisters *r));
 void irq_uninstall_handler(int irq);
 void irq_handler(struct InterruptRegisters* regs);
+
+#endif
