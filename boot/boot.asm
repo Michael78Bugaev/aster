@@ -1,20 +1,23 @@
-bits 32
+BITS 32
+
 section .text
-        ;multiboot spec
-        align 4
-        dd 0x1BADB002            ;magic
-        dd 0x00                  ;flags
-        dd - (0x1BADB002 + 0x00) ;checksum
+    ALIGN 4
+    DD 0x1BADB002
+    DD 0x00000000
+    DD -(0x1BADB002 + 0x00000000)
 
 global start
 extern kentr
 
 start:
-  cli
-  mov esp, stack_space
-  call kentr
-  hlt
+    CLI
+    MOV esp, stack_space
+    CALL kentr
+    HLT
+HaltKernel:
+    HLT
+    JMP HaltKernel
 
 section .bss
-resb 8192
+RESB 8192
 stack_space:

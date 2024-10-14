@@ -6,6 +6,8 @@
 *	Description:
 * ----------------------------------------------------------------------------*/
 
+#ifndef VGA_H
+#define VGA_H
 
 #include <stdint.h>
 
@@ -27,3 +29,5 @@ void	write(uint8_t character, uint8_t attribute_byte, uint16_t offset);
 void	scroll_line();
 uint16_t		get_cursor();
 void	set_cursor(uint16_t pos);
+
+#endif

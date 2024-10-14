@@ -1,3 +1,6 @@
+#ifndef GDT_H
+#define GDT_H
+
 #include <stdint.h>
 
 struct gdt_entry_t
@@ -51,3 +54,5 @@ struct tss_entry_t
 void init_gdt();
 void set_gdt_gate(uint32_t num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran);
 void write_tss(uint32_t num, uint16_t ss0, uint32_t esp0);
+
+#endif
