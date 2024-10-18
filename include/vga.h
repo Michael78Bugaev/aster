@@ -23,11 +23,16 @@
 
 void	kprint(uint8_t *str);
 void kprintc(uint8_t *str, uint8_t attr);
+void kprinti(int number);
+void kprintci(int number, uint8_t attr);
+void kprinti_vidmem(int number, int offset);
+void kprintci_vidmem(int number, uint8_t attr, int offset);
 void	putchar(uint8_t character, uint8_t attribute_byte);
 void	clear_screen();
 void	write(uint8_t character, uint8_t attribute_byte, uint16_t offset);
 void	scroll_line();
 uint16_t		get_cursor();
+int get_cursor_x();
 void	set_cursor(uint16_t pos);
 
 #endif

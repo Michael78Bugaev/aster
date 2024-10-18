@@ -21,7 +21,15 @@ void	kprint(uint8_t *str)
 
 	while (*str)
 	{
-		putchar(*str, 0x07);
+		if (*str == '\b')
+		{
+			set_cursor(get_cursor() - 2);
+			putchar(' ', 0x07);
+			set_cursor(get_cursor() - 1);
+		}
+		else {
+			putchar(*str, 0x07);
+		}
 		str++;
 	}
 }
@@ -30,10 +38,99 @@ void kprintc(uint8_t *str, uint8_t attr)
 {
     while (*str)
 	{
-		putchar(*str, attr);
+		if (*str == '\b')
+		{
+			set_cursor(get_cursor() - 2);
+			putchar(' ', attr);
+			set_cursor(get_cursor() - 1);
+		}
+		else {
+			putchar(*str, attr);
+		}
 		str++;
 	}
 }
+void int_to_str(int num, char *str);
+// Helper function to convert integer to string
+void int_to_str(int num, char *str) {
+    int i = 0;
+    int is_negative = 0;
+
+    // Handle 0 explicitly
+    if (num == 0) {
+        str[i++] = '0';
+        str[i] = '\0';
+        return;
+    }
+
+    // Handle negative numbers
+    if (num < 0) {
+        is_negative = 1;
+        num = -num;
+    }
+
+    // Process each digit
+    while (num != 0) {
+        int rem = num % 10;
+        str[i++] = rem + '0';
+        num = num / 10;
+    }
+
+    // If number is negative, append '-'
+    if (is_negative) {
+        str[i++] = '-';
+    }
+
+    str[i] = '\0';
+
+    // Reverse the string
+    for (int j = 0; j < i / 2; j++) {
+        char temp = str[j];
+        str[j] = str[i - j - 1];
+        str[i - j - 1] = temp;
+    }
+}
+
+// Prints an integer
+void kprinti(int number) {
+    char buffer[12]; // Enough to hold all int digits and a sign
+    int_to_str(number, buffer);
+	kprint(buffer);
+    // Here you would call a function to print the string to the screen
+    // For example: kprints(buffer);
+}
+
+// Prints a colored integer
+void kprintci(int number, uint8_t attr) {
+    char buffer[12];
+	int_to_str(number, buffer);
+    kprintc(buffer, attr);
+    // Here you would call a function to print the string with color
+    // For example: kprints_color(buffer, attr);
+}
+
+// Prints an integer directly into the video memory
+void kprinti_vidmem(int number, int offset) {
+    char buffer[12];
+    int_to_str(number, buffer);
+    volatile char *video = (volatile char *)0xB8000;
+    for (int i = 0; buffer[i] != '\0'; i++) {
+        video[offset + i * 2] = buffer[i];
+        video[offset + i * 2 + 1] = 0x07; // Default attribute (white on black)
+    }
+}
+
+// Prints a colored integer directly into the video memory
+void kprintci_vidmem(int number, uint8_t attr, int offset) {
+    char buffer[12];
+    int_to_str(number, buffer);
+    volatile char *video = (volatile char *)0xB8000;
+    for (int i = 0; buffer[i] != '\0'; i++) {
+        video[offset + i * 2] = buffer[i];
+        video[offset + i * 2 + 1] = attr;
+    }
+}
+
 void	putchar(uint8_t character, uint8_t attribute_byte)
 {
 	/* Более высокоуровневая функция печати символа */
@@ -84,6 +181,10 @@ void	scroll_line()
 		write('\0', WHITE_ON_BLACK, (last_line + i * 2));
 		i++;
 	}
+	int old = get_cursor();
+	set_cursor(0);//                                                                         "
+    kprintc("                                 Origin Aster                                   \n", 0x70);
+	set_cursor(old);
 	set_cursor(last_line);
 }
 
@@ -126,6 +227,24 @@ uint16_t		get_cursor()
 	// клетках экрана (cell offset), а нам нужно в символах (char offset), т.к.
 	// на каждый символ у нас 2 байта
 	return (((high_byte << 8) + low_byte) * 2);
+}
+
+int get_cursor_x() {
+    // Define the port addresses for the cursor position
+    const int CURSOR_LOCATION_PORT = 0x3D4;
+    const int CURSOR_LOCATION_HIGH_PORT = 0x3D5; // High byte (row)
+    const int CURSOR_LOCATION_LOW_PORT = 0x3D6;  // Low byte (column)
+
+    // Send the command to get the high byte of the cursor position
+    port_byte_out(CURSOR_LOCATION_PORT, 14); // Set the high byte index
+    int cursor_high = port_byte_in(CURSOR_LOCATION_HIGH_PORT); // Read the high byte
+
+    // Send the command to get the low byte of the cursor position
+    port_byte_out(CURSOR_LOCATION_PORT, 15); // Set the low byte index
+    int cursor_low = port_byte_in(CURSOR_LOCATION_LOW_PORT); // Read the low byte
+
+    // The X position is simply the low byte (column)
+    return cursor_low;
 }
 
 void	set_cursor(uint16_t pos)

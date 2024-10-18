@@ -8,6 +8,8 @@ char input[1024];
 char agent_input[512];
 bool capsOn = false;
 bool capsLock = false;
+bool enter = false;
+int barrier;
 
 int backspace_func(char buffer[]);
 char get_acsii_low(char code);
@@ -29,7 +31,7 @@ int backspace_func(char buffer[])
 
 void handler(struct InterruptRegisters *regs)
 {
-    char scanCode = port_byte_in(0x60) & 0x7F;
+      char scanCode = port_byte_in(0x60) & 0x7F;
 	  char press = port_byte_in(0x60) & 0x80;
     //kprint(lowercase[0x22]);
 
@@ -54,26 +56,34 @@ void handler(struct InterruptRegisters *regs)
         case 42:
             if (press == 0) {
                 capsOn = true;
+                int old = get_cursor();
                 set_cursor(0);
                 kprintc(" SHIFT", 0x70);
+                set_cursor(old);
             }else{
                 capsOn = false;
+                int old = get_cursor();
                 set_cursor(0);
                 kprintc("      ", 0x70);
+                set_cursor(old);
             }
             break;
         case 58:
             if (!capsLock && press == 0)
             {
                 capsLock = true;
+                int old = get_cursor();
                 set_cursor(0);
                 kprintc(" CAPS LOCK", 0x70);
+                set_cursor(old);
             }
             else if (capsLock && press == 0)
             {
                 capsLock = false;
+                int old = get_cursor();
                 set_cursor(0);
                 kprintc("          ", 0x70);
+                set_cursor(old);
             }
             break;
         case 40:
@@ -88,14 +98,18 @@ void handler(struct InterruptRegisters *regs)
             break;
         case 0x0E:
             if (press == 0)
-                putchar('\b', 0x07);
-                backspace_func(input);
+                if (get_cursor_x() > barrier)
+                {
+                  kprint("\b");
+                  backspace_func(input);
+                }
             break;
         case 0x1C:
             if (press == 0)
             {
                 kprint("\n");
-                input[0] = '\0';
+                //input[0] = '\0';
+                enter = true;
                 irq_uninstall_handler(1);
             }
             else;    
@@ -109,21 +123,31 @@ void handler(struct InterruptRegisters *regs)
             {
                 if (capsOn || capsLock)
                 {
+                    kprintci_vidmem(scanCode, 0x70, 150);
                     putchar(get_acsii_high(scanCode), 0x07);
                     join(input, get_acsii_high(scanCode));
                 }
                 else
                 {
+                    kprintci_vidmem(scanCode, 0x70, 150);
                     putchar(get_acsii_low(scanCode), 0x07);
                     join(input, get_acsii_low(scanCode));
                 }
+            }
+            else{
+              int old = get_cursor();
+              set_cursor(150);
+              kprintc("     ", 0x70);
+              set_cursor(old);
             }
             break;
     }
 }
 void agent_handler(struct InterruptRegisters *regs)
 {
-    char scanCode = port_byte_in(0x60) & 0x7F;
+    while (1)
+    {
+      char scanCode = port_byte_in(0x60) & 0x7F;
 	  char press = port_byte_in(0x60) & 0x80;
     //kprint(lowercase[0x22]);
 
@@ -148,26 +172,34 @@ void agent_handler(struct InterruptRegisters *regs)
         case 42:
             if (press == 0) {
                 capsOn = true;
+                int old = get_cursor();
                 set_cursor(0);
                 kprintc(" SHIFT", 0x70);
+                set_cursor(old);
             }else{
                 capsOn = false;
+                int old = get_cursor();
                 set_cursor(0);
                 kprintc("      ", 0x70);
+                set_cursor(old);
             }
             break;
         case 58:
             if (!capsLock && press == 0)
             {
                 capsLock = true;
+                int old = get_cursor();
                 set_cursor(0);
                 kprintc(" CAPS LOCK", 0x70);
+                set_cursor(old);
             }
             else if (capsLock && press == 0)
             {
                 capsLock = false;
+                int old = get_cursor();
                 set_cursor(0);
                 kprintc("          ", 0x70);
+                set_cursor(old);
             }
             break;
         case 40:
@@ -189,7 +221,8 @@ void agent_handler(struct InterruptRegisters *regs)
             if (press == 0)
             {
                 kprint("\n");
-                input[0] = '\0';
+                //input[0] = '\0';
+                enter = true;
                 irq_uninstall_handler(1);
                 break;
             }
@@ -215,12 +248,19 @@ void agent_handler(struct InterruptRegisters *regs)
             }
             break;
     }
+    }
 }
 
-char *get_string()
+void get_string(uint8_t *buffer)
 {
-    irq_install_handler(1, &handler);
-    return input;
+    barrier = get_cursor_x();
+    while (enter != true)
+    {
+      irq_install_handler(1, &handler);
+    }
+    enter = false;
+    buffer = input;
+    
 }
 char *agent_get_string()
 {

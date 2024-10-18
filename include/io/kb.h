@@ -85,7 +85,7 @@
 void handler(struct InterruptRegisters *regs);
 void agent_handler(struct InterruptRegisters *regs);
 
-char *get_string();
+void get_string(uint8_t *buffer);
 char *agent_get_string();
 
 #endif
