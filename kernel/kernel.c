@@ -2,6 +2,11 @@
 #include <cpu/gdt.h>
 #include <string.h>
 #include <io/kb.h>
+#include <cpu/mem.h>
+#include <stdbool.h>
+#include <fs/fat16.h>
+#include <fs/disk.h>
+#include <drv/ide.h>
 #include <io/idt.h>
 
 void kentr(void)
@@ -10,20 +15,11 @@ void kentr(void)
     init_gdt();
     init_idt();
     init_pit();
-    
-    char *input;
+    init_dmem();
+    fs_load();
 
-    while (1)
-    {
-        get_string(input);
-        kprint("You entered: ");
-        kprintci(input, 0x70);
-            kprint("\n");
-        for (int i = 0; i < strlen(input); i++)
-        {
-            input[i] = 0;
-        }
-    }
+    kprint(">");
+    irq_install_handler(1, &sash);
     
     return;
 }

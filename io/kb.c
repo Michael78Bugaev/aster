@@ -1,15 +1,16 @@
 #include <io/kb.h>
 #include <io/iotools.h>
 #include <vga.h>
+#include <sash.h>
 #include <string.h>
 #include <stdint.h>
 
-char input[1024];
+uint8_t *input = "";
 char agent_input[512];
 bool capsOn = false;
 bool capsLock = false;
 bool enter = false;
-int barrier;
+int barrier = 0;
 
 int backspace_func(char buffer[]);
 char get_acsii_low(char code);
@@ -248,6 +249,122 @@ void agent_handler(struct InterruptRegisters *regs)
             }
             break;
     }
+    }
+}
+
+void sash(struct InterruptRegisters *regs)
+{
+    char scanCode = port_byte_in(0x60) & 0x7F;
+	  char press = port_byte_in(0x60) & 0x80;
+    //kprint(lowercase[0x22]);
+
+    switch (scanCode)
+    {
+        case 1:
+        case 29:
+        case 56:
+        case 59:
+        case 60:
+        case 61:
+        case 62:
+        case 63:
+        case 64:
+        case 65:
+        case 66:
+        case 67:
+        case 68:
+        case 87:
+        case 88:
+            break;
+        case 42:
+            if (press == 0) {
+                capsOn = true;
+                int old = get_cursor();
+                set_cursor(0);
+                kprintc(" SHIFT", 0x70);
+                set_cursor(old);
+            }else{
+                capsOn = false;
+                int old = get_cursor();
+                set_cursor(0);
+                kprintc("      ", 0x70);
+                set_cursor(old);
+            }
+            break;
+        case 58:
+            if (!capsLock && press == 0)
+            {
+                capsLock = true;
+                int old = get_cursor();
+                set_cursor(0);
+                kprintc(" CAPS LOCK", 0x70);
+                set_cursor(old);
+            }
+            else if (capsLock && press == 0)
+            {
+                capsLock = false;
+                int old = get_cursor();
+                set_cursor(0);
+                kprintc("          ", 0x70);
+                set_cursor(old);
+            }
+            break;
+        case 40:
+            if (press)
+                putchar('\'', 0x07);
+                join(input, '\'');
+            break;
+        case 0x29:
+            if (press)
+                putchar('~', 0x07);
+                join(input, '~');
+            break;
+        case 0x0E:
+            if (press == 0)
+                if (get_cursor_x() > barrier)
+                {
+                  kprint("\b");
+                  backspace_func(input);
+                }
+            break;
+        case 0x1C:
+            if (press == 0)
+            {
+                kprint("\n");
+                //input[0] = '\0';
+                enter = true;
+                execute_sash(input);
+                strnone(input);
+            }
+            else;    
+                
+            break;
+        case 0x0F:
+            if (press);
+            break;
+        default:
+            if (press == 0)
+            {
+                if (capsOn || capsLock)
+                {
+                    kprintci_vidmem(scanCode, 0x70, 150);
+                    putchar(get_acsii_high(scanCode), 0x07);
+                    join(input, get_acsii_high(scanCode));
+                }
+                else
+                {
+                    kprintci_vidmem(scanCode, 0x70, 150);
+                    putchar(get_acsii_low(scanCode), 0x07);
+                    join(input, get_acsii_low(scanCode));
+                }
+            }
+            else{
+              int old = get_cursor();
+              set_cursor(150);
+              kprintc("     ", 0x70);
+              set_cursor(old);
+            }
+            break;
     }
 }
 

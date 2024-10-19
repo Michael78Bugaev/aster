@@ -1,5 +1,7 @@
 #include <string.h>
+#include <vga.h>
 #include <stdint.h>
+#include <cpu/mem.h>
 
 typedef unsigned long        size_t;
 
@@ -9,6 +11,21 @@ int strlen(char s[]) {
         ++i;
     }
     return i;
+}
+char *strncpy(char *dest, const char *src, size_t n) {
+    size_t i;
+
+    // Copy up to n characters from src to dest
+    for (i = 0; i < n && src[i] != '\0'; i++) {
+        dest[i] = src[i];
+    }
+
+    // If we copied fewer than n characters, pad the rest of dest with null bytes
+    for (; i < n; i++) {
+        dest[i] = '\0';
+    }
+
+    return dest;
 }
 void strncat(char *s, char c)
 {
@@ -95,4 +112,129 @@ int startsWith(char s1[], char s2[]) {
         if (s1[i] != s2[i]) return 0;
     }
     return 1;
+}
+
+void strnone(char *str)
+{
+    for (int i = 0; i < strlen(str); i++)
+    {
+        str[i] = 0;
+    }
+    
+}
+
+char **splitString(const char *str, int *count) {
+    // Сначала подсчитаем количество слов
+    int n = 0;
+    const char *ptr = str;
+    while (*ptr) {
+        // Пропускаем пробелы
+        while (*ptr == ' ') {
+            ptr++;
+        }
+        if (*ptr) {
+            n++; // Нашли слово
+            // Пропускаем само слово
+            while (*ptr && *ptr != ' ') {
+                ptr++;
+            }
+        }
+    }
+
+    // Выделяем память для массива строк
+    char **result = malloc(n * sizeof(char *));
+    if (!result) {
+        kprint("Error memory allocation!\n");
+        return NULL; // Ошибка выделения памяти
+    }
+
+    // Заполняем массив словами
+    int index = 0;
+    ptr = str;
+    while (*ptr) {
+        // Пропускаем пробелы
+        while (*ptr == ' ') {
+            ptr++;
+        }
+        if (*ptr) {
+            const char *start = ptr;
+            // Находим конец слова
+            while (*ptr && *ptr != ' ') {
+                ptr++;
+            }
+            // Выделяем память для слова и копируем его
+            int length = ptr - start;
+            result[index] = malloc((length + 1) * sizeof(char));
+            if (!result[index]) {
+                // Освобождаем ранее выделенную память в случае ошибки
+                for (int j = 0; j < index; j++) {
+                    mfree(result[j]);
+                }
+                mfree(result);
+                return NULL; // Ошибка выделения памяти
+            }
+            strncpy(result[index], start, length);
+            result[index][length] = '\0'; // Завершаем строку нулевым символом
+            index++;
+        }
+    }
+
+    *count = n; // Возвращаем количество найденных слов
+    return result;
+}
+
+size_t strnlen(const char *s, size_t maxlen) {
+    size_t len;
+    for (len = 0; len < maxlen; len++) {
+        if (s[len] == '\0') {
+            break;
+        }
+    }
+    return len;
+}
+
+int isdigit(int c) {
+    return (c >= '0' && c <= '9');
+}
+
+int memcmp(const void *s1, const void *s2, size_t n) {
+    const unsigned char *p1 = s1, *p2 = s2;
+    
+    for (size_t i = 0; i < n; i++) {
+        if (p1[i] != p2[i]) {
+            return p1[i] - p2[i];
+        }
+    }
+    
+    return 0;
+}
+
+int atoi(const char *str);
+int atoi(const char *str) {
+    int result = 0;
+    int sign = 1;
+    int i = 0;
+
+    // Handle whitespace
+    while (str[i] == ' ' || str[i] == '\t' || str[i] == '\n') {
+        i++;
+    }
+
+    // Handle sign
+    if (str[i] == '-' || str[i] == '+') {
+        sign = (str[i] == '-') ? -1 : 1;
+        i++;
+    }
+
+    // Process digits
+    while (str[i] >= '0' && str[i] <= '9') {
+        result = result * 10 + (str[i] - '0');
+        i++;
+    }
+
+    return sign * result;
+}
+
+int to_integer(const char* str) {
+    return atoi(str);
 }

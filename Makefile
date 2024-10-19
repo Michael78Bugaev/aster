@@ -1,30 +1,33 @@
 include make.cfg
 
-$(BUILD_DIR)/AstrKernel: $(BUILD_DIR)/boot.asmo $(BUILD_DIR)/idt.asmo $(BUILD_DIR)/gdt.asmo kernel.o
+$(BUILD_DIR)/AstrKernel: $(BUILD_DIR)/boot.asmo $(BUILD_DIR)/idt.asmo $(BUILD_DIR)/gdt.asmo $(BUILD_DIR)/disk.asmo kernel.o
 	@echo "Linking..."
-	@echo $(OBJ)
-	$(LD) -m elf_i386 $(LDFLAGS) -o $@ $^ iotools.o vga.o gdt.o idt.o kb.o string.o pit.o
+	@$(LD) -m elf_i386 $(LDFLAGS) -o $@ $^ iotools.o disk.o fat16.o mem.o vga.o gdt.o file.o idt.o kb.o string.o pit.o sash.o
 
-	cp $(BUILD_DIR)/AstrKernel $(BUILD_DIR)/iso/boot/AstrKernel
-	grub-mkrescue -o aster_32-bit.iso $(BUILD_DIR)/iso
-	qemu-system-i386 -cdrom aster_32-bit.iso
-	make clean
+	@cp $(BUILD_DIR)/AstrKernel $(BUILD_DIR)/iso/boot/AstrKernel
+	@grub-mkrescue -o aster_32-bit.iso $(BUILD_DIR)/iso
+	@sudo qemu-system-i386 -cdrom aster_32-bit.iso
+	@make clean
 
 $(BUILD_DIR)/idt.asmo: $(BOOT_DIR)/idt.asm
 	@echo "Compiling interrupts main file..."
-	$(AS) $(ASMFLAGS) -o $@ $^
+	@$(AS) $(ASMFLAGS) -o $@ $^
 
 $(BUILD_DIR)/boot.asmo: $(BOOT_DIR)/boot.asm
 	@echo "Compiling multiboot..."
-	$(AS) $(ASMFLAGS) -o $@ $^
+	@$(AS) $(ASMFLAGS) -o $@ $^
 
 $(BUILD_DIR)/gdt.asmo: $(BOOT_DIR)/gdt.asm
 	@echo "Compiling GDT..."
-	$(AS) $(ASMFLAGS) -o $@ $(BOOT_DIR)/gdt.asm
+	@$(AS) $(ASMFLAGS) -o $@ $(BOOT_DIR)/gdt.asm
+
+$(BUILD_DIR)/disk.asmo: $(BOOT_DIR)/disk.asm
+	@echo "Compiling disk driver..."
+	@$(AS) $(ASMFLAGS) -o $@ $(BOOT_DIR)/disk.asm
 
 kernel.o:
 	@echo "Compiling kernel..."
-	$(CC) $(CFLAGS) $(C_FILES)
+	@$(CC) $(CFLAGS) $(C_FILES)
 
 clean:
-	rm -rf *.o $(BUILD_DIR)/*.o
+	rm -rf *.o $(BUILD_DIR)/*.asmo
