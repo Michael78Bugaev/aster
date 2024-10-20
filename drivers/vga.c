@@ -181,10 +181,6 @@ void	scroll_line()
 		write('\0', WHITE_ON_BLACK, (last_line + i * 2));
 		i++;
 	}
-	int old = get_cursor();
-	set_cursor(0);//                                                                         "
-    kprintc("                                 Origin Aster                                   \n", 0x70);
-	set_cursor(old);
 	set_cursor(last_line);
 }
 
@@ -199,7 +195,6 @@ void	clear_screen()
 		offset += 2;
 	}
 	set_cursor(0);//                                                                         "
-    kprintc("                                 Origin Aster                                   \n", 0x70);
 }
 
 void	write(uint8_t character, uint8_t attribute_byte, uint16_t offset)
@@ -228,25 +223,6 @@ uint16_t		get_cursor()
 	// на каждый символ у нас 2 байта
 	return (((high_byte << 8) + low_byte) * 2);
 }
-
-int get_cursor_x() {
-    // Define the port addresses for the cursor position
-    const int CURSOR_LOCATION_PORT = 0x3D4;
-    const int CURSOR_LOCATION_HIGH_PORT = 0x3D5; // High byte (row)
-    const int CURSOR_LOCATION_LOW_PORT = 0x3D6;  // Low byte (column)
-
-    // Send the command to get the high byte of the cursor position
-    port_byte_out(CURSOR_LOCATION_PORT, 14); // Set the high byte index
-    int cursor_high = port_byte_in(CURSOR_LOCATION_HIGH_PORT); // Read the high byte
-
-    // Send the command to get the low byte of the cursor position
-    port_byte_out(CURSOR_LOCATION_PORT, 15); // Set the low byte index
-    int cursor_low = port_byte_in(CURSOR_LOCATION_LOW_PORT); // Read the low byte
-
-    // The X position is simply the low byte (column)
-    return cursor_low;
-}
-
 void	set_cursor(uint16_t pos)
 {
 	/* Функция, устаналивающая курсор по смещнию (позиции) pos */
@@ -263,4 +239,27 @@ void	set_cursor(uint16_t pos)
 	port_byte_out(REG_SCREEN_CTRL, 15);
 	// Передаем нижний байт
 	port_byte_out(REG_SCREEN_DATA, (uint8_t)(pos & 0xff));
+}
+
+// Получение координаты X курсора
+uint8_t get_cursor_x() {
+    uint16_t pos = get_cursor();
+    return pos % 80;  // 80 - стандартная ширина экрана в текстовом режиме
+}
+
+// Получение координаты Y курсора
+uint8_t get_cursor_y() {
+    uint16_t pos = get_cursor();
+    return pos / 80;  // 80 - стандартная ширина экрана в текстовом режиме
+}
+
+void set_cursor_xy(uint8_t x, uint8_t y) {
+    uint16_t pos;
+    
+    // Проверка границ
+    if (x >= MAX_ROWS) x = MAX_ROWS - 1;
+    if (y >= MAX_COLS) y = MAX_COLS - 1;
+    
+    pos = y * MAX_ROWS + x;
+    set_cursor(pos);
 }

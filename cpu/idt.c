@@ -140,29 +140,29 @@ char *get_ex(int num)
         case 18:
             return "Machine check";
         case 19:
-            return "Reserved 1";
+            return "SIMD Floating point Exception";
         case 20:
-            return "Reserved 2";
+            return "Virtualization exception";
         case 21:
-            return "Reserved 3";
+            return "Control protection exception";
         case 22:
-            return "Reserved 4";
+            return " \" - listen, i don't know what is exception this!\"";
         case 23:
-            return "Reserved 5";
+            return "Hypervisor Injection Exception";
         case 24:
-            return "Reserved 6";
+            return "VMM Communication Exception";
         case 25:
-            return "Reserved 7";
+            return "Security Exception";
         case 26:
-            return "Reserved 8";
+            return "\" - It Is RE-SE-RVED! - \"";
         case 27:
-            return "Reserved 9";
+            return "Triple fault";
         case 28:
-            return "Reserved 10";
+            return "FPU Error";
         case 29:
-            return "Reserved 11";
+            return "nope! but code is 29";
         case 30:
-            return "Reserved 12";
+            return "nope! but code is 30";
         default:
             return "Unknown exception";
     }

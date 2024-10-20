@@ -238,3 +238,6 @@ int atoi(const char *str) {
 int to_integer(const char* str) {
     return atoi(str);
 }
+
+#define MAX_HISTORY 1024
+#define MAX_COMMAND_LENGTH 1024

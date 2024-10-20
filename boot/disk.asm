@@ -1,3 +1,4 @@
+bits 32
 global disk_reset
 global disk_read_sector
 global disk_get_details
@@ -9,7 +10,7 @@ disk_reset:
     push si
     mov dl, [bp+4]
     mov ah, 0x00
-    int 0x13
+    ;int 0x13
     mov ax, 0x01
     jc .error
     jmp .end

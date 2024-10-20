@@ -74,3 +74,26 @@ void memset(void *dest, char val, uint32_t count)
     }
 
 }
+
+void insw(uint16_t port, void *addr, unsigned long count)
+{
+    asm volatile ("cld; rep insw"
+                  : "+D" (addr), "+c" (count)
+                  : "d" (port)
+                  : "memory");
+}
+
+void outsw(uint16_t port, const void *addr, unsigned long count)
+{
+    asm volatile ("cld; rep outsw"
+                  : "+S" (addr), "+c" (count)
+                  : "d" (port)
+                  : "memory");
+}
+
+int k_toupper(int c) {
+    if(c >= 97 && c <= 122) {
+        return c - 32;
+    }
+    return c;
+}

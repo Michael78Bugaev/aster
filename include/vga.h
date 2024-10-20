@@ -32,7 +32,11 @@ void	clear_screen();
 void	write(uint8_t character, uint8_t attribute_byte, uint16_t offset);
 void	scroll_line();
 uint16_t		get_cursor();
-int get_cursor_x();
 void	set_cursor(uint16_t pos);
+// Получение координаты X курсора
+uint8_t get_cursor_x();
+uint8_t get_cursor_y();
+
+void set_cursor_xy(uint8_t x, uint8_t y);
 
 #endif

@@ -5,12 +5,18 @@
 #include <string.h>
 #include <stdint.h>
 
+#define MAX_HISTORY 1024
+#define MAX_COMMAND_LENGTH 1024
+
+
 uint8_t *input = "";
 char agent_input[512];
 bool capsOn = false;
 bool capsLock = false;
 bool enter = false;
-int barrier = 0;
+int barrier = 2;
+uint8_t shell_history[MAX_COMMAND_LENGTH][MAX_HISTORY];
+int history_index = 0;
 
 int backspace_func(char buffer[]);
 char get_acsii_low(char code);
@@ -28,6 +34,11 @@ int backspace_func(char buffer[])
     {
         return 0;
     }
+}
+
+void set_barrier(int n)
+{
+  barrier = n;
 }
 
 void handler(struct InterruptRegisters *regs)
@@ -252,6 +263,8 @@ void agent_handler(struct InterruptRegisters *regs)
     }
 }
 
+void add_to_history(const char *command);
+
 void sash(struct InterruptRegisters *regs)
 {
     char scanCode = port_byte_in(0x60) & 0x7F;
@@ -274,8 +287,52 @@ void sash(struct InterruptRegisters *regs)
         case 67:
         case 68:
         case 87:
+        case 80:
+        case 72:
         case 88:
             break;
+        // case 80:
+        // if (press)
+        // {
+        //     if (history_index >= 1)
+        //     {
+        //       int inputlen = strlen(input);
+        //       int old_y = get_cursor_y();
+        //       int old_x = get_cursor_x();
+        //       history_index--;
+        //       char *str_tmp = shell_history[history_index];
+        //       input = str_tmp;
+        //       set_cursor_xy(1, old_y);
+        //       for (int i = 0; i < inputlen; i++)
+        //       {
+        //          kprint(" ");
+        //       }
+        //       set_cursor_xy(1, old_y);
+        //       kprint(input);
+        //     }
+        // }
+        //   break;
+        // case 72:
+        // if (press)
+        // {
+        //   if (history_index < MAX_HISTORY)
+        //   {
+        //     int inputlen = strlen(input);
+        //     int old_y = get_cursor_y();
+        //     int old_x = get_cursor_x();
+        //     history_index++;
+        //     char *str_tmp = shell_history[history_index];
+        //     input = str_tmp;
+        //     set_cursor_xy(1, old_y);
+        //     for (int i = 0; i < inputlen; i++)
+        //     {
+        //       kprint(" ");
+        //     }
+        //     set_cursor_xy(1, old_y);
+        //     kprint(input);
+        //   }
+        // }
+        //   break;
         case 42:
             if (press == 0) {
                 capsOn = true;
@@ -333,6 +390,7 @@ void sash(struct InterruptRegisters *regs)
                 kprint("\n");
                 //input[0] = '\0';
                 enter = true;
+                add_to_history(input);
                 execute_sash(input);
                 strnone(input);
             }
@@ -365,6 +423,26 @@ void sash(struct InterruptRegisters *regs)
               set_cursor(old);
             }
             break;
+    }
+}
+
+void add_to_history(const char *command) {
+    static int history_count = 0;
+    static int current_index = 0;
+
+    // Проверяем, не пустая ли команда
+    if (command == NULL || command[0] == '\0') {
+        return;
+    }
+
+    // Копируем команду в history
+    strncpy(shell_history[current_index], command, MAX_COMMAND_LENGTH - 1);
+    shell_history[current_index][MAX_COMMAND_LENGTH - 1] = '\0';  // Обеспечиваем завершающий нуль
+
+    // Увеличиваем индекс и счетчик
+    current_index = (current_index + 1) % MAX_HISTORY;
+    if (history_count < MAX_HISTORY) {
+        history_count++;
     }
 }
 

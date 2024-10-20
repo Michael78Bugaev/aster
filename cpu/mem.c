@@ -122,3 +122,35 @@ void *merge_current_node_into_previous(dynamic_mem_node_t *current_mem_node) {
         }
     }
 }
+
+void* krealloc(void* ptr, size_t new_size)
+{
+    // Если указатель NULL, это эквивалентно kmalloc
+    if (ptr == NULL) {
+        return malloc(new_size);
+    }
+
+    // Если новый размер 0, это эквивалентно kfree
+    if (new_size == 0) {
+        mfree(ptr);
+        return NULL;
+    }
+
+    // Выделяем новый блок памяти
+    void* new_ptr = malloc(new_size);
+    if (new_ptr == NULL) {
+        // Не удалось выделить память, возвращаем NULL
+        return NULL;
+    }
+
+    // Копируем данные из старого блока в новый
+    // Предполагаем, что у нас есть способ узнать размер старого блока
+    size_t old_size = 0;
+    size_t copy_size = (old_size < new_size) ? old_size : new_size;
+    memcpy(new_ptr, ptr, copy_size);
+
+    // Освобождаем старый блок
+    mfree(ptr);
+
+    return new_ptr;
+}

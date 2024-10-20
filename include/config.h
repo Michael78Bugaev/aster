@@ -1,5 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
+#include <stdint.h>
+
 #define FAT16_MAX_FILESYSTEMS 10
 #define FAT16_MAX_HEAP_ALLOCATIONS 56
 #define FAT16_MEMORY_BLOCK_SIZE 512

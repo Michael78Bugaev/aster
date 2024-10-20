@@ -3,11 +3,13 @@
 #include <string.h>
 #include <io/kb.h>
 #include <cpu/mem.h>
+#include <fs/fat32.h>
+#include <drv/ata.h>
 #include <stdbool.h>
-#include <fs/fat16.h>
-#include <fs/disk.h>
-#include <drv/ide.h>
+#include <cpu/pit.h>
 #include <io/idt.h>
+
+#define NULL (void*)0
 
 void kentr(void)
 {
@@ -16,7 +18,9 @@ void kentr(void)
     init_idt();
     init_pit();
     init_dmem();
-    fs_load();
+    
+    identify();
+    
 
     kprint(">");
     irq_install_handler(1, &sash);
