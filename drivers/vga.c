@@ -9,6 +9,7 @@
 
 #include <vga.h>
 #include <io/iotools.h>
+#include <cpu/pit.h>
 #include <stdint.h>
 
 
@@ -262,4 +263,34 @@ void set_cursor_xy(uint8_t x, uint8_t y) {
     
     pos = y * MAX_ROWS + x;
     set_cursor(pos);
+}
+
+void disable_cursor()
+{
+	port_byte_out(REG_SCREEN_CTRL, 0x0A);
+	port_byte_out(REG_SCREEN_DATA, 0x20);
+}
+void kprint_hex(uint32_t value) {
+    putchar('0', 0x07);
+    putchar('x', 0x07);
+
+    // Create a buffer for the hexadecimal digits
+    char hex_str[9]; // 8 hex digits + null terminator
+    hex_str[8] = '\0'; // Null-terminate the string
+
+    // Fill the string with hexadecimal digits
+    for (int i = 7; i >= 0; i--) {
+        uint8_t digit = value & 0xF; // Get the last 4 bits
+        if (digit < 10) {
+            hex_str[i] = '0' + digit; // Convert to character '0'-'9'
+        } else {
+            hex_str[i] = 'A' + (digit - 10); // Convert to character 'A'-'F'
+        }
+        value >>= 4; // Shift right by 4 bits to process the next digit
+    }
+
+    // Print the hexadecimal string
+    for (int i = 0; i < 8; i++) {
+        putchar(hex_str[i],  0x07);
+    }
 }

@@ -1,6 +1,7 @@
 #include <io/iotools.h>
 #include <vga.h>
 #include <stdint.h>
+#include <cpu/mem.h>
 #include <drv/ata.h>
 
 #define ATA_PRIMARY_DATA         0x1F0
@@ -13,6 +14,7 @@
 #define ATA_PRIMARY_COMM_REGSTAT 0x1F7
 #define ATA_PRIMARY_ALTSTAT_DCR  0x3F6
 
+int is_drive_exist = 0;
 
 #define STAT_ERR  (1 << 0) // Indicates an error occurred. Send a new command to clear it
 #define STAT_DRQ  (1 << 3) // Set when the drive has PIO data to transfer, or is ready to accept PIO data.
@@ -40,8 +42,12 @@
  * At that point, if ERR is clear, the data is ready to read from the Data port (0x1F0).
  * Read 256 16-bit values, and store them.
  */
-
+int is_ex()
+{
+    return is_drive_exist;
+}
 uint8_t identify() {
+    kprintc("Starting indentify IDE (ATA) disks...\n", 0x0A);
     port_byte_in(ATA_PRIMARY_COMM_REGSTAT);
     port_byte_out(ATA_PRIMARY_DRIVE_HEAD, 0xA0);
     port_byte_in(ATA_PRIMARY_COMM_REGSTAT);
@@ -59,25 +65,21 @@ uint8_t identify() {
     // Read the status port. If it's zero, the drive does not exist.
     uint8_t status = port_byte_in(ATA_PRIMARY_COMM_REGSTAT);
 
-    kprint("Waiting for status.\n");
+    kprintc("Waiting for status...", 0x02);
     while(status & STAT_BSY) {
-        uint32_t i = 0;
-        while(1) {
-            kprint("Printing stuff ");
-            kprinti(i);
-            kprint("\n");
-            i++;
-        }
-        for(i = 0; i < 0x0FFFFFFF; i++) {}
-        kprint("Checking regstat.\n");
         status = port_byte_in(ATA_PRIMARY_COMM_REGSTAT);
     }
     
-    if(status == 0) return 0;
-
+    if(status == 0)
+    {
+        kprintc("fail.\n", 0x02);
+        kprintc("panic: IDE drive does not exist.\n", 0x0C);
+        kprintc("warning: IDE disk will not be avaliable\n", 0x0E);
+        return 0;
+    }
+    kprintc("Done.\n", 0x02);
     kprint("Status indicates presence of a drive. Polling while STAT_BSY... ");
     while(status & STAT_BSY) {
-      kprint("\nport_byte_in(ATA_PRIMARY_COMM_REGSTAT);... ");
       status = port_byte_in(ATA_PRIMARY_COMM_REGSTAT);
     }
     kprint("Done.\n");
@@ -86,6 +88,8 @@ uint8_t identify() {
     uint8_t hi = port_byte_in(ATA_PRIMARY_LBA_HI);
     if(mid || hi) {
         // The drive is not ATA. (Who knows what it is.)
+        kprintc("error: the drive is not ATA\n", 0x0C);
+        kprintc("warning: IDE disk will not be avaliable\n", 0x0E);
         return 0;
     }
 
@@ -97,15 +101,20 @@ uint8_t identify() {
 
     if(status & STAT_ERR) {
         // There was an error on the drive. Forget about it.
+        kprintc("error: drive error\n", 0x0C);
+        kprintc("warning: IDE disk will not be avaliable\n", 0x0E);
         return 0;
     }
 
     kprint("Reading IDENTIFY structure.\n");
     //uint8_t *buff = kmalloc(40960, 0, NULL);
+    malloc(256 * 2);
     uint8_t buff[256 * 2];
     insw(ATA_PRIMARY_DATA, buff, 256);
-    kprint("Success. Disk is ready to go.\n");
+    kprintc("Success. Disk is ready to go.\n", 0x0A);
+    mfree(&buff);
     // We read it!
+    is_drive_exist = 1;
     return 1;
 }
 
@@ -186,7 +195,7 @@ void ata_pio_read48(uint64_t LBA, uint16_t sectorcount, uint8_t *target) {
         // POLL!
         uint8_t status = port_byte_in(ATA_PRIMARY_COMM_REGSTAT);
         if(status & STAT_DRQ) {
-             kprint("Drive is ready to transfer data!");
+             kprintc("Drive is ready to transfer data!\n", 0x02);
              return;
         }
         // Transfer the data!
@@ -225,7 +234,8 @@ void ata_pio_write48(uint64_t LBA, uint16_t sectorcount, uint8_t *target) {
                 break;
             }
             else if(status & STAT_ERR) {
-                kprintc("panic: DISK SET ERROR STATUS!", 0x0C);
+                kprintc("panic: Unable to write data to IDE drive\n", 0x0C);
+                return;
             }
         }
         // Transfer the data!
@@ -237,4 +247,14 @@ void ata_pio_write48(uint64_t LBA, uint16_t sectorcount, uint8_t *target) {
     port_byte_out(ATA_PRIMARY_COMM_REGSTAT, 0xE7);
     // Poll for BSY.
     while(port_byte_in(ATA_PRIMARY_COMM_REGSTAT) & STAT_BSY) {}
+}
+
+uint16_t get_status()
+{
+    uint16_t status = port_byte_in(ATA_PRIMARY_COMM_REGSTAT);
+    while (status & STAT_BSY)
+    {
+        status = port_byte_in(ATA_PRIMARY_COMM_REGSTAT);
+    }
+    return status;
 }

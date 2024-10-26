@@ -4,8 +4,10 @@
 #include <io/kb.h>
 #include <cpu/mem.h>
 #include <fs/fat32.h>
+#include <sash.h>
 #include <drv/ata.h>
 #include <stdbool.h>
+#include <sfat32.h>
 #include <cpu/pit.h>
 #include <io/idt.h>
 
@@ -13,7 +15,6 @@
 
 void kentr(void)
 {
-    clear_screen();
     init_gdt();
     init_idt();
     init_pit();
@@ -21,7 +22,9 @@ void kentr(void)
     
     identify();
     
+    execute_sash("verinfo");
 
+    kprint(get_current_directory());
     kprint(">");
     irq_install_handler(1, &sash);
     

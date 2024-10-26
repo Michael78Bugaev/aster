@@ -241,3 +241,26 @@ int to_integer(const char* str) {
 
 #define MAX_HISTORY 1024
 #define MAX_COMMAND_LENGTH 1024
+
+void *memmove(void *dest, const void *src, size_t n) {
+    // Приводим указатели к типу char* для работы с байтами
+    char *d = (char *)dest;
+    const char *s = (const char *)src;
+
+    // Если области памяти не перекрываются, просто копируем
+    if (d < s || d >= s + n) {
+        // Копируем от начала до конца
+        while (n--) {
+            *d++ = *s++;
+        }
+    } else {
+        // Если области перекрываются, копируем с конца
+        d += n;
+        s += n;
+        while (n--) {
+            *(--d) = *(--s);
+        }
+    }
+
+    return dest; // Возвращаем указатель на целевую область
+}

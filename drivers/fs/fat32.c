@@ -53,11 +53,10 @@ static uint16_t readi16(uint8_t *buff, size_t offset)
 }
 static uint32_t readi32(uint8_t *buff, size_t offset) {
     uint8_t *ubuff = buff + offset;
-    return
-        ((ubuff[3] << 24) & 0xFF000000) |
-        ((ubuff[2] << 16) & 0x00FF0000) |
-        ((ubuff[1] << 8) & 0x0000FF00) |
-        (ubuff[0] & 0x000000FF);
+    return ((ubuff[3] << 24) & 0xFF000000) |
+           ((ubuff[2] << 16) & 0x00FF0000) |
+           ((ubuff[1] << 8)  & 0x0000FF00) |
+           (ubuff[0]         & 0x000000FF);
 }
 
 /**
@@ -387,44 +386,62 @@ static void write_long_filename_entries(uint8_t *start, uint32_t num_entries, ch
 }
 
 f32 *makeFilesystem(char *fatSystem) {
-    f32 *fs = malloc(sizeof (struct f32));
-    if(!identify()) {
-        return NULL;
-    }
-    kprint("Filesystem identified!\n");
-    kprint("Reading BPB...");
-    read_bpb(fs, &fs->bpb);
-    kprint("Done.\n");
+    if (is_ex())
+    {
 
-    kprint("trim_spaces\n");
-    trim_spaces(fs->bpb.system_id, 8);
-    if(strcmp(fs->bpb.system_id, "FAT32") != 0) {
+        /*
+        uint8_t *ubuff = buff + offset;
+        return ((ubuff[3] << 24) & 0xFF000000) |
+            ((ubuff[2] << 16) & 0x00FF0000) |
+            ((ubuff[1] << 8)  & 0x0000FF00) |
+            (ubuff[0]         & 0x000000FF);
+        */
+
+        f32 *fs = malloc(sizeof (struct f32));
+        kprint("Creating filesystem...\n");
+        kprint("Reading BPB...");
+        read_bpb(fs, &fs->bpb);
+        kprint("Done.\n");
+
+        trim_spaces(fs->bpb.system_id, 8);
+        
+        kprint("BPB system ID: ");
+        kprint(fs->bpb.system_id);
+        kprint("\n");
+
         mfree(fs);
-        return NULL;
-    }
-    kprint("Sectors per cluster: ");
-    kprinti(fs->bpb.sectors_per_cluster);
-    kprint("\n");
+        kprint("Sectors per cluster: ");
+        kprinti(fs->bpb.sectors_per_cluster);
+        kprint("\n");
 
-    fs->partition_begin_sector = 0;
-    fs->fat_begin_sector = fs->partition_begin_sector + fs->bpb.reserved_sectors;
-    fs->cluster_begin_sector = fs->fat_begin_sector + (fs->bpb.FAT_count * fs->bpb.count_sectors_per_FAT32);
-    fs->cluster_size = 512 * fs->bpb.sectors_per_cluster;
-    fs->cluster_alloc_hint = 0;
+        fs->partition_begin_sector = 0;
+        fs->fat_begin_sector = fs->partition_begin_sector + fs->bpb.reserved_sectors;
+        fs->cluster_begin_sector = fs->fat_begin_sector + (fs->bpb.FAT_count * fs->bpb.count_sectors_per_FAT32);
+        fs->cluster_size = 512 * fs->bpb.sectors_per_cluster;
+        fs->cluster_alloc_hint = 0;
 
-    // Load the FAT
-    uint32_t bytes_per_fat = 512 * fs->bpb.count_sectors_per_FAT32;
-    fs->FAT = malloc(bytes_per_fat);
-    uint32_t sector_i;
-    for(sector_i = 0; sector_i < fs->bpb.count_sectors_per_FAT32; sector_i++) {
-        uint8_t sector[512];
-        getSector(fs, sector, fs->fat_begin_sector + sector_i, 1);
-        uint32_t integer_j;
-        for(integer_j = 0; integer_j < 512/4; integer_j++) {
-            fs->FAT[sector_i * (512 / 4) + integer_j] = readi32(sector, integer_j * 4);
-        }
+        // Load the FAT
+        uint32_t bytes_per_fat = 512 * fs->bpb.count_sectors_per_FAT32;
+        mfree(sizeof(fs->FAT));
+        fs->FAT = malloc(bytes_per_fat);
+
+        uint32_t sector_i;
+         for(sector_i = 0; sector_i < fs->bpb.count_sectors_per_FAT32; sector_i++) {
+             uint8_t sector[512];
+             getSector(fs, sector, fs->fat_begin_sector + sector_i, 1);
+             uint32_t integer_j;
+             kprint("\n");
+             for(integer_j = 0; integer_j < 512/4; integer_j++) {
+                 fs->FAT[sector_i * 128 + integer_j] = readi32(sector, integer_j * 4);
+             }
+         }
+         kprint("\nDONE\n");
+        return fs;
     }
-    return fs;
+    else
+    {
+        kprintc("error: there aren't any IDE disks installed\n", 0x0C);
+    }
 }
 
 void destroyFilesystem(f32 *fs) {

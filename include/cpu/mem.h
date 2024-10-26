@@ -2,7 +2,7 @@
 #include <stdbool.h>
 
 #define NULL_POINTER ((void*)0)
-#define DYNAMIC_MEM_TOTAL_SIZE 4*1024
+#define DYNAMIC_MEM_TOTAL_SIZE 1000000*1024
 #define DYNAMIC_MEM_NODE_SIZE sizeof(dynamic_mem_node_t) // 16
 
 typedef unsigned long        size_t;

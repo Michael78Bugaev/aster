@@ -17,6 +17,7 @@ bool enter = false;
 int barrier = 2;
 uint8_t shell_history[MAX_COMMAND_LENGTH][MAX_HISTORY];
 int history_index = 0;
+int cursor_index = 0;
 
 int backspace_func(char buffer[]);
 char get_acsii_low(char code);
@@ -269,6 +270,7 @@ void sash(struct InterruptRegisters *regs)
 {
     char scanCode = port_byte_in(0x60) & 0x7F;
 	  char press = port_byte_in(0x60) & 0x80;
+    int length = strlen(input);
     //kprint(lowercase[0x22]);
 
     switch (scanCode)
@@ -291,79 +293,34 @@ void sash(struct InterruptRegisters *regs)
         case 72:
         case 88:
             break;
-        // case 80:
-        // if (press)
-        // {
-        //     if (history_index >= 1)
-        //     {
-        //       int inputlen = strlen(input);
-        //       int old_y = get_cursor_y();
-        //       int old_x = get_cursor_x();
-        //       history_index--;
-        //       char *str_tmp = shell_history[history_index];
-        //       input = str_tmp;
-        //       set_cursor_xy(1, old_y);
-        //       for (int i = 0; i < inputlen; i++)
-        //       {
-        //          kprint(" ");
-        //       }
-        //       set_cursor_xy(1, old_y);
-        //       kprint(input);
-        //     }
-        // }
-        //   break;
-        // case 72:
-        // if (press)
-        // {
-        //   if (history_index < MAX_HISTORY)
-        //   {
-        //     int inputlen = strlen(input);
-        //     int old_y = get_cursor_y();
-        //     int old_x = get_cursor_x();
-        //     history_index++;
-        //     char *str_tmp = shell_history[history_index];
-        //     input = str_tmp;
-        //     set_cursor_xy(1, old_y);
-        //     for (int i = 0; i < inputlen; i++)
-        //     {
-        //       kprint(" ");
-        //     }
-        //     set_cursor_xy(1, old_y);
-        //     kprint(input);
-        //   }
-        // }
-        //   break;
+        case 0x4B: // Стрелка влево
+            if (press == 0 && cursor_index > 0) {
+                cursor_index--;
+                // Перемещение курсора влево на экране
+                set_cursor(get_cursor() - 1); // Предполагается, что kprint поддерживает этот код
+            }
+            break;
+        case 0x4D: // Стрелка вправо
+            if (press == 0 && cursor_index < length) {
+                cursor_index++;
+                set_cursor(get_cursor() + 1);
+            }
+            break;
         case 42:
             if (press == 0) {
                 capsOn = true;
-                int old = get_cursor();
-                set_cursor(0);
-                kprintc(" SHIFT", 0x70);
-                set_cursor(old);
             }else{
                 capsOn = false;
-                int old = get_cursor();
-                set_cursor(0);
-                kprintc("      ", 0x70);
-                set_cursor(old);
             }
             break;
         case 58:
             if (!capsLock && press == 0)
             {
                 capsLock = true;
-                int old = get_cursor();
-                set_cursor(0);
-                kprintc(" CAPS LOCK", 0x70);
-                set_cursor(old);
             }
             else if (capsLock && press == 0)
             {
                 capsLock = false;
-                int old = get_cursor();
-                set_cursor(0);
-                kprintc("          ", 0x70);
-                set_cursor(old);
             }
             break;
         case 40:
@@ -378,7 +335,7 @@ void sash(struct InterruptRegisters *regs)
             break;
         case 0x0E:
             if (press == 0)
-                if (get_cursor_x() > barrier)
+                if (get_cursor_x() > barrier && cursor_index > 0)
                 {
                   kprint("\b");
                   backspace_func(input);
@@ -392,6 +349,8 @@ void sash(struct InterruptRegisters *regs)
                 enter = true;
                 add_to_history(input);
                 execute_sash(input);
+                kprint(get_current_directory());
+                kprint(">");
                 strnone(input);
             }
             else;    
@@ -405,22 +364,14 @@ void sash(struct InterruptRegisters *regs)
             {
                 if (capsOn || capsLock)
                 {
-                    kprintci_vidmem(scanCode, 0x70, 150);
                     putchar(get_acsii_high(scanCode), 0x07);
                     join(input, get_acsii_high(scanCode));
                 }
                 else
                 {
-                    kprintci_vidmem(scanCode, 0x70, 150);
                     putchar(get_acsii_low(scanCode), 0x07);
                     join(input, get_acsii_low(scanCode));
                 }
-            }
-            else{
-              int old = get_cursor();
-              set_cursor(150);
-              kprintc("     ", 0x70);
-              set_cursor(old);
             }
             break;
     }
