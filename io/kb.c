@@ -335,7 +335,7 @@ void sash(struct InterruptRegisters *regs)
             break;
         case 0x0E:
             if (press == 0)
-                if (get_cursor_x() > barrier && cursor_index > 0)
+                if (get_cursor_x() > barrier)
                 {
                   kprint("\b");
                   backspace_func(input);

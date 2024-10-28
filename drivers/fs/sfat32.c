@@ -23,7 +23,7 @@
 #define NULL (void*)0
 
 
-char *current_directory = "C:\\";
+char *current_directory = "C:/";
 
 char *get_current_directory()
 {
@@ -835,6 +835,7 @@ void fat32_thread(void* arg) {
 	}
 	
 	struct volume_s* tmp = volume_get('C');
+	if (tmp == NULL) {return;}
 	uint32_t cluster;
 	clear_screen();
 	fat_get_cluster(tmp, &cluster);
@@ -877,7 +878,7 @@ void fat32_thread(void* arg) {
 	if (status == FSTATUS_OK) {
 		fat_kprint_info(info);
 	}
-	kprint("- EOD -\n");
+	kprint("FAT32 is done.\n");
 }
 
 /// Mounts a physical disk. It checks for a valid FAT32 file system in all
@@ -899,6 +900,7 @@ uint8_t disk_mount(disk_e disk) {
 
 	// Check the boot signature in the MBR
 	if (fat_load16(mount_buffer + MBR_BOOT_SIG) != MBR_BOOT_SIG_VALUE) {
+		kprint("Found the boot signature in MBR. Mounting is not possible.\n");
 		return 0;
 	}
 	
@@ -996,6 +998,9 @@ struct volume_s* volume_get(char letter) {
 		}
 		vol = vol->next;
 	}
+	kprint("Unable to get drive '");
+	putchar(letter, 0x0F);
+	kprint("'!\n");
 	return NULL;
 }
 

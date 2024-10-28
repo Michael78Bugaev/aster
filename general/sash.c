@@ -24,9 +24,13 @@ void execute_sash(char *arg)
             else
             {
                 kprint("Aster Operating System Shell commands:\n");
-                kprint("  >help: Displays this help message\n");
-                kprint("  >clear: Clear the screen\n");
-                kprint("  >tick: Get current tick count\n");
+                kprint("  >help:     Displays this help message\n");
+                kprint("  >clear:    Clear the screen\n");
+                kprint("  >tick:     Get current tick count\n");
+                kprint("  >identify: Identify disks (searching for one disk)\n            to initiliaze FAT32 on them\n");
+                kprint("  >initfs:   Initiliaze FAT32 on the first disk\n");
+                kprint("  >rainbow:  Show all 16 colors (for screen testing)\n");
+                kprint("  >mem:      Display memory map\n");
 
             }
         }
@@ -44,8 +48,8 @@ void execute_sash(char *arg)
         else if (strcmp(args[0], "ls") == 0)
         {
             struct dir_s dir;
-            fat_dir_open(&dir, get_current_directory(), 0);
-            struct info_s* info = (struct info_s*)find_memblock(0x00000000, sizeof(struct info_s));
+            fat_dir_open(&dir, get_current_directory(), 1);
+            struct info_s* info = (struct info_s*)find_memblock(0x10000000, sizeof(struct info_s));
             fstatus status;
             status = fat_dir_read(&dir, info);
             if (status == FSTATUS_OK)
@@ -53,11 +57,15 @@ void execute_sash(char *arg)
                 fat_kprint_info(info);
             }
         }
+        else if (strcmp(args[0], "identify") == 0)
+        {
+            identify();
+        }
         else if (strcmp(args[0], "md") == 0)
         {
             if (count > 1)
             {
-                if (startsWith("C:\\", args[1]) == 0)
+                if (startsWith("C:/", args[1]) == 0)
                 {
                     fat_dir_make(args[1]);
                 }
@@ -70,7 +78,7 @@ void execute_sash(char *arg)
             }
             else
             {
-                kprintc("Usage: C:\\>md <directory_name>\n", 0x0C);
+                kprintc("Usage: C:/>md <directory_name>\n", 0x0C);
             }
         }
         else if (strcmp(args[0], "verinfo") == 0)
@@ -90,14 +98,9 @@ void execute_sash(char *arg)
         }
         else if (strcmp(args[0], "rainbow") == 0)
         {
-            clear_screen();
-            for (int i = 0; i < 25; i++)
+            for (int i = 0; i < 16; i++)
             {
-                for (int i = 0; i < 16; i++)
-                {
-                    kprintc("#####", i);
-                }
-                kprint("\n");
+                kprintc("#####", i);
             }
         }
         else if (strcmp(args[0], "tick") == 0)

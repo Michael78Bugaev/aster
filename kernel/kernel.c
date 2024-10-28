@@ -19,9 +19,10 @@ void kentr(void)
     init_idt();
     init_pit();
     init_dmem();
+
+    kprintc("Warning: disks have not initiliazed yet.\n         You need to initiliaze them by yourself.\n\n", 0x0F);
     
-    identify();
-    
+    execute_sash("rainbow");
     execute_sash("verinfo");
 
     kprint(get_current_directory());
