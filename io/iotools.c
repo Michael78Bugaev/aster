@@ -97,3 +97,17 @@ int k_toupper(int c) {
     }
     return c;
 }
+
+uint32_t port_dword_in(unsigned short port)
+{
+    /* Функция-обертка над assembly, читающая 4 байта (dword) из параметра port */
+    uint32_t result;
+    __asm__("inl %%dx, %%eax" : "=a" (result) : "d" (port));
+    return result;
+}
+
+void port_dword_out(unsigned short port, uint32_t data)
+{
+    /* Функция-обертка над assembly, пишущая data (4 байта, т.е. dword) в port */
+    __asm__("outl %%eax, %%dx" : : "a" (data), "d" (port));
+}

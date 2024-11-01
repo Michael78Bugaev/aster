@@ -324,9 +324,18 @@ void sash(struct InterruptRegisters *regs)
             }
             break;
         case 40:
-            if (press)
-                putchar('\'', 0x07);
-                join(input, '\'');
+            if (press) {
+                if (capsOn || capsLock)
+                {
+                  putchar('\"', 0x07);
+                  join(input, '\"'); 
+                }
+                else
+                {
+                  putchar('\'', 0x07);
+                  join(input, '\''); 
+                }
+            }
             break;
         case 0x29:
             if (press)

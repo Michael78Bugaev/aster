@@ -1,6 +1,6 @@
 #include <io/idt.h>
 #include <io/iotools.h>
-#include <vga.h>
+#include <stdio.h>
 #include <stdint.h>
 
 struct idt_entry_struct idt_entries[256];
@@ -10,7 +10,6 @@ extern void idt_flush(uint32_t);
 
 void init_idt()
 {
-    kprint("Setting up Interrupt Descriptor Table...");
     idt_ptr.limit = sizeof(struct idt_entry_struct) * 256 - 1;
     idt_ptr.base = (uint32_t) &idt_entries;
     memset(&idt_entries, 0, sizeof(struct idt_entry_struct) * 256);
@@ -84,7 +83,6 @@ void init_idt()
     set_idt_gate(177, (uint32_t)isr177, 0x08, 0x8E);
 
     idt_flush((uint32_t)&idt_ptr);
-    kprint("done.\n");
 }
 
 void set_idt_gate(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags)
@@ -172,8 +170,7 @@ void isr_handler(struct InterruptRegisters* resgs)
 {
     if (resgs->int_no < 32)
     {
-        kprintc("\nSystem exception! Reason: ", 0x0C);
-        kprintc(get_ex(resgs->int_no), 0x0C);
+        printf("--< Kernel panic >--|--< %s >--", get_ex(resgs->int_no));
         for(;;);
     }
 }

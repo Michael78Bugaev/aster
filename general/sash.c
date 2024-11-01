@@ -4,6 +4,7 @@
 #include <fs/fat32.h>
 #include <cpu/mem.h>
 #include <drv/ata.h>
+#include <config.h>
 #include <sfat32.h>
 #include <vga.h>
 #include <sfat32.h>
@@ -23,14 +24,14 @@ void execute_sash(char *arg)
             }
             else
             {
-                kprint("Aster Operating System Shell commands:\n");
-                kprint("  >help:     Displays this help message\n");
-                kprint("  >clear:    Clear the screen\n");
-                kprint("  >tick:     Get current tick count\n");
-                kprint("  >identify: Identify disks (searching for one disk)\n            to initiliaze FAT32 on them\n");
-                kprint("  >initfs:   Initiliaze FAT32 on the first disk\n");
-                kprint("  >rainbow:  Show all 16 colors (for screen testing)\n");
-                kprint("  >mem:      Display memory map\n");
+                printf("Aster Operating System Shell commands:\n");
+                printf("  >help:     Displays this help message\n");
+                printf("  >clear:    Clear the screen\n");
+                printf("  >tick:     Get current tick count\n");
+                printf("  >identify: Identify disks (searching for one disk)\n            to initiliaze FAT32 on them\n");
+                printf("  >initfs:   Initiliaze FAT32 on the first disk\n");
+                printf("  >rainbow:  Show all 16 colors (for screen testing)\n");
+                printf("  >mem:      Display memory map\n");
 
             }
         }
@@ -38,7 +39,7 @@ void execute_sash(char *arg)
         {
             if (count > 1)
             {
-                kprint("Usage: >clear\n\n");
+                printf("Usage: >clear\n\n");
             }
             else
             {
@@ -60,6 +61,88 @@ void execute_sash(char *arg)
         else if (strcmp(args[0], "identify") == 0)
         {
             identify();
+        }
+        else if (strcmp(args[0], "fat_table") == 0)
+        {
+
+        }
+        else if (strcmp(args[0], "export") == 0)
+        {
+            for (int i = 0; i < get_var_count(); i++)
+            {
+                char *name = var->name[i];
+                if (var->type == TYPE_INT)
+                {
+                    kprint("int ");
+                    kprint(tostr(name));
+                    kprint(" = ");
+                    kprinti(var->data.int_value);
+                    kprint("\n");
+                }
+                else
+                {
+                    kprint("str ");
+                    kprint(tostr(name));
+                    kprint(" = ");
+                    kprint(var->data.str_value);
+                    kprint("\n");
+                }
+            }
+        }
+        else if (strcmp(args[0], "echo") == 0)
+        {
+            if (count > 1)
+            {
+                for (int i = 1; i < count; i++)
+                {
+                    struct global_variable* var_found = find_variable(args[i]);
+                    if (var_found != NULL) {
+                        // Если переменная найдена, выводим её значение
+                        if (var_found->type == TYPE_INT) {
+                            kprinti(var_found->data.int_value);
+                        } else if (var_found->type == TYPE_STR) {
+                            kprint(var_found->data.str_value);
+                        }
+                    } else {
+                        if (args[i][0] == '"' && args[i][strlen(args[i]) - 1] == '"') {
+                            // Удаляем кавычки и выводим строку
+                            args[i][strlen(args[i]) - 1] = '\0'; // Убираем завершающую кавычку
+                            kprint(&args[i][1]); // Выводим строку без начальной кавычки
+                        } else {
+                            // Если не строка, выводим имя
+                            kprint(args[i]);
+                        }
+                    }
+
+                    if (i < count - 1)
+                    {
+                        kprint(" ");
+                    }
+                }
+                kprint("\n");
+            }
+            else
+            {
+                kprint("Usage: echo <variable_name> | \"hello world\" | 12345\n");
+            }
+        }
+        else if (strcmp(args[0], "int") == 0)
+        {
+            if (count == 3) {
+                init_variable(args[1], args[2], TYPE_INT);
+                kprint("\n");
+            } else {
+                kprint("Usage: >int <var_name> <value>\n");
+            }
+        }
+        else if (strcmp(args[0], "str") == 0)
+        {
+            if (count == 3) {
+                init_variable(args[1], args[2], TYPE_STR);
+                kprint("\n");
+            } else {
+                kprint("Usage: >str <var_name> <value>\n");
+            }
         }
         else if (strcmp(args[0], "md") == 0)
         {
@@ -118,9 +201,21 @@ void execute_sash(char *arg)
         }
         else
         {
-            kprintc("Unknown command \"", 0x0C);
-            kprintc(args[0], 0x0C);
-            kprintc("\"\n", 0x0C);
+            if (strcmp(args[1], "=") == 0)
+            {
+                if (count == 3) {
+                    assign_variable(args[0], args[2]); // Присваиваем значение
+                    kprint("\n");
+                } else {
+                    kprint("Usage: <var_name> = <value>\n");
+                }
+            }
+            else
+            {
+                kprintc("Unknown command \"", 0x0C);
+                kprintc(args[0], 0x0C);
+                kprintc("\"\n", 0x0C);
+            }
         }
     }
     else;

@@ -1,5 +1,6 @@
 #include <cpu/gdt.h>
 #include <vga.h>
+#include <stdio.h>
 #include <io/iotools.h>
 
 extern gdt_flush(uint32_t);
@@ -11,7 +12,6 @@ struct tss_entry_t tss_entry;
 
 void init_gdt()
 {
-    kprint("Setting up GDT..");
     gdt_ptr.limit = (sizeof(struct gdt_entry_t) * 6) - 1;
     gdt_ptr.base = (uint32_t)&gdt_entries;
 
@@ -25,8 +25,6 @@ void init_gdt()
 
     gdt_flush(&gdt_ptr);
     tss_flush();
-
-    kprint("done\n");
 }
 
 void set_gdt_gate(uint32_t num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran)

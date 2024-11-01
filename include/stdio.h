@@ -28,5 +28,6 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream);
 DIR *opendir(const char *name);
 struct dir_entry *readdir(DIR *dirp);
 int closedir(DIR *dirp);
+void printf(const char* format, ...);
 
 #endif // STDIO_H

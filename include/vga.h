@@ -41,5 +41,6 @@ void set_cursor_xy(uint8_t x, uint8_t y);
 void disable_cursor();
 
 void kprint_hex(uint32_t value);
+void kprint_hex_w(uint32_t value);
 
 #endif

@@ -130,7 +130,7 @@ static uint32_t sector_for_cluster(f32 *fs, uint32_t cluster) {
 // CLUSTER NUMBERS START AT 2 (for some reason...)
 void getCluster(f32 *fs, uint8_t *buff, uint32_t cluster_number) { // static
     if(cluster_number >= EOC) {
-        kprintc("panic: Can't get cluster. Hit End Of Chain.\n", 0x0C);
+        printf("panic: Can't get cluster. hit end of chain.\n");
     }
     uint32_t sector = sector_for_cluster(fs, cluster_number);
     uint32_t sector_count = fs->bpb.sectors_per_cluster;
@@ -398,21 +398,17 @@ f32 *makeFilesystem(char *fatSystem) {
         */
 
         f32 *fs = malloc(sizeof (struct f32));
-        kprint("Creating filesystem...\n");
-        kprint("Reading BPB...");
+        printf("creating filesystem...\n");
+        printf("reading BPB...");
         read_bpb(fs, &fs->bpb);
-        kprint("Done.\n");
+        printf("done.\n");
 
         trim_spaces(fs->bpb.system_id, 8);
         
-        kprint("BPB system ID: ");
-        kprint(fs->bpb.system_id);
-        kprint("\n");
+        printf("BPB system ID: %s\n", fs->bpb.system_id);
 
         mfree(fs);
-        kprint("Sectors per cluster: ");
-        kprinti(fs->bpb.sectors_per_cluster);
-        kprint("\n");
+        printf("Sectors per cluster: %d\n", fs->bpb.sectors_per_cluster);
 
         fs->partition_begin_sector = 0;
         fs->fat_begin_sector = fs->partition_begin_sector + fs->bpb.reserved_sectors;

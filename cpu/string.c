@@ -1,10 +1,19 @@
 #include <string.h>
 #include <vga.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <cpu/mem.h>
+#include <stddef.h>
 
-typedef unsigned long        size_t;
+char *strcpy(char *dest, const char *src) {
+    char *ptr = dest;
 
+    while ((*ptr++ = *src++) != '\0') {
+        ; // Do nothing, just iterate through the strings
+    }
+
+    return dest;
+}
 int strlen(char s[]) {
     int i = 0;
     while (s[i] != '\0') {
@@ -144,7 +153,6 @@ char **splitString(const char *str, int *count) {
     // Выделяем память для массива строк
     char **result = malloc(n * sizeof(char *));
     if (!result) {
-        kprint("Error memory allocation!\n");
         return NULL; // Ошибка выделения памяти
     }
 
@@ -209,7 +217,6 @@ int memcmp(const void *s1, const void *s2, size_t n) {
     return 0;
 }
 
-int atoi(const char *str);
 int atoi(const char *str) {
     int result = 0;
     int sign = 1;
@@ -263,4 +270,55 @@ void *memmove(void *dest, const void *src, size_t n) {
     }
 
     return dest; // Возвращаем указатель на целевую область
+}
+
+char *strdup(const char *str) {
+    int len = strlen(str);
+    char *dup = (char *)malloc((len + 1) * sizeof(char));
+
+    if (dup) {
+        strcpy(dup, str);
+    }
+
+    return dup;
+}
+int isalpha(char c) {
+    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+}
+
+char* tostr(int value) {
+    // Handle negative numbers
+    bool is_negative = false;
+    if (value < 0) {
+        is_negative = true;
+        value = -value; // Make value positive for processing
+    }
+
+    // Calculate the number of digits
+    int temp = value;
+    int num_digits = 0;
+    do {
+        num_digits++;
+        temp /= 10;
+    } while (temp > 0);
+
+    // Allocate memory for the string
+    char* str = (char*)malloc(num_digits + is_negative + 1); // +1 for null terminator
+    if (str == NULL) {
+        return NULL; // Handle memory allocation failure
+    }
+
+    // Fill the string with digits in reverse order
+    str[num_digits + is_negative] = '\0'; // Null-terminate the string
+    for (int i = num_digits - 1; i >= 0; i--) {
+        str[i + is_negative] = (value % 10) + '0'; // Convert digit to character
+        value /= 10;
+    }
+
+    // Add the negative sign if needed
+    if (is_negative) {
+        str[0] = '-';
+    }
+
+    return str;
 }

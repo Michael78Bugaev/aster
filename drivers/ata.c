@@ -3,26 +3,9 @@
 #include <stdint.h>
 #include <cpu/mem.h>
 #include <drv/ata.h>
-
-#define ATA_PRIMARY_DATA         0x1F0
-#define ATA_PRIMARY_ERR          0x1F1
-#define ATA_PRIMARY_SECCOUNT     0x1F2
-#define ATA_PRIMARY_LBA_LO       0x1F3
-#define ATA_PRIMARY_LBA_MID      0x1F4
-#define ATA_PRIMARY_LBA_HI       0x1F5
-#define ATA_PRIMARY_DRIVE_HEAD   0x1F6
-#define ATA_PRIMARY_COMM_REGSTAT 0x1F7
-#define ATA_PRIMARY_ALTSTAT_DCR  0x3F6
+#include <drv/sata.h>
 
 int is_drive_exist = 0;
-
-#define STAT_ERR  (1 << 0) // Indicates an error occurred. Send a new command to clear it
-#define STAT_DRQ  (1 << 3) // Set when the drive has PIO data to transfer, or is ready to accept PIO data.
-#define STAT_SRV  (1 << 4) // Overlapped Mode Service Request.
-#define STAT_DF   (1 << 5) // Drive Fault Error (does not set ERR).
-#define STAT_RDY  (1 << 6) // Bit is clear when drive is spun down, or after an error. Set otherwise.
-#define STAT_BSY  (1 << 7) // Indicates the drive is preparing to send/receive data (wait for it to clear).
-                           // In case of 'hang' (it never clears), do a software reset.
 
 
 /**
@@ -47,7 +30,7 @@ int is_ex()
     return is_drive_exist;
 }
 uint8_t identify() {
-    kprintc("Starting indentify IDE (ATA) disks...\n", 0x0A);
+    printf("Starting indentify IDE (ATA) disks...\n");
     port_byte_in(ATA_PRIMARY_COMM_REGSTAT);
     port_byte_out(ATA_PRIMARY_DRIVE_HEAD, 0xA0);
     port_byte_in(ATA_PRIMARY_COMM_REGSTAT);
@@ -65,35 +48,35 @@ uint8_t identify() {
     // Read the status port. If it's zero, the drive does not exist.
     uint8_t status = port_byte_in(ATA_PRIMARY_COMM_REGSTAT);
 
-    kprintc("Waiting for status...", 0x02);
+    printf("Waiting for status...");
     while(status & STAT_BSY) {
         status = port_byte_in(ATA_PRIMARY_COMM_REGSTAT);
     }
     
     if(status == 0)
     {
-        kprintc("fail.\n", 0x02);
-        kprintc("panic: IDE drive does not exist.\n", 0x0C);
-        kprintc("warning: IDE disk will not be avaliable\n", 0x0E);
+        printf("fail.\n");
+        printf("panic: IDE drive does not exist.\n");
+        printf("warning: IDE disk will not be avaliable\n");
         return 0;
     }
-    kprintc("Done.\n", 0x02);
-    kprint("Status indicates presence of a drive. Polling while STAT_BSY... ");
+    printf("done.\n");
+    printf("polling while STAT_BSY...");
     while(status & STAT_BSY) {
       status = port_byte_in(ATA_PRIMARY_COMM_REGSTAT);
     }
-    kprint("Done.\n");
+    printf("done.\n");
 
     uint8_t mid = port_byte_in(ATA_PRIMARY_LBA_MID);
     uint8_t hi = port_byte_in(ATA_PRIMARY_LBA_HI);
     if(mid || hi) {
         // The drive is not ATA. (Who knows what it is.)
-        kprintc("error: the drive is not ATA\n", 0x0C);
-        kprintc("warning: IDE disk will not be avaliable\n", 0x0E);
+        printf("error: the drive is not ATA\n");
+        printf("warning: IDE disk will not be avaliable\n");
         return 0;
     }
 
-    kprint("Waiting for ERR or DRQ.\n");
+    printf("waiting for ERR or DRQ.\n");
     // Wait for ERR or DRQ
     while(!(status & (STAT_ERR | STAT_DRQ))) {
         status = port_byte_in(ATA_PRIMARY_COMM_REGSTAT);
@@ -101,17 +84,17 @@ uint8_t identify() {
 
     if(status & STAT_ERR) {
         // There was an error on the drive. Forget about it.
-        kprintc("error: drive error\n", 0x0C);
-        kprintc("warning: IDE disk will not be avaliable\n", 0x0E);
+        printf("error: drive error\n");
+        printf("warning: IDE disk will not be avaliable\n");
         return 0;
     }
 
-    kprint("Reading IDENTIFY structure.\n");
+    printf("reading IDENTIFY structure\n");
     //uint8_t *buff = kmalloc(40960, 0, NULL);
     malloc(256 * 2);
     uint8_t buff[256 * 2];
     insw(ATA_PRIMARY_DATA, buff, 256);
-    kprintc("Success. Disk is ready to go.\n", 0x0A);
+    printf("success. disk is ready to go.\n");
     mfree(&buff);
     // We read it!
     is_drive_exist = 1;
@@ -195,7 +178,7 @@ void ata_pio_read48(uint64_t LBA, uint16_t sectorcount, uint8_t *target) {
         // POLL!
         uint8_t status = port_byte_in(ATA_PRIMARY_COMM_REGSTAT);
         if(status & STAT_DRQ) {
-             kprintc("Drive is ready to transfer data!\n", 0x02);
+             printf("drive is ready to transfer data\n");
              return;
         }
         // Transfer the data!
@@ -256,4 +239,246 @@ uint16_t get_status()
         status = port_byte_in(ATA_PRIMARY_COMM_REGSTAT);
     }
     return status;
+}
+
+int ata_detect(void) {
+    // Проверяем наличие ATA устройств
+    uint16_t signature = port_word_in(0x1F2);
+    return (signature == 0xEB14 || signature == 0x9669);
+}
+
+int ata_identify(uint8_t channel) {
+    uint16_t io_base = (channel == ATA_PRIMARY) ? 0x1F0 : 0x170;
+    
+    // Отправляем команду IDENTIFY
+    port_byte_out(io_base + 6, 0xA0);  // Select master drive
+    port_byte_out(io_base + 7, 0xEC);  // IDENTIFY command
+    
+    // Ждем ответа
+    if (port_byte_in(io_base + 7) == 0) return 0;
+    
+    while (port_byte_in(io_base + 7) & 0x80);  // Wait until BSY clears
+    
+    if (port_byte_in(io_base + 4) != 0 && port_byte_in(io_base + 5) != 0) {
+        // Device exists
+        while ((port_byte_in(io_base + 7) & 0x08) == 0);  // Wait for DRQ
+        
+        // Read identify data
+        for (int i = 0; i < 256; i++) {
+            uint16_t data = port_word_in(io_base);
+            // Store data as needed
+        }
+        return 1;
+    }
+    
+    return 0;
+}
+
+void ata_get_model(uint8_t channel, char* model) {
+    uint16_t io_base = (channel == ATA_PRIMARY) ? 0x1F0 : 0x170;
+    
+    // Model name starts at word 27 and is 40 bytes long
+    for (int i = 0; i < 20; i++) {
+        uint16_t data = port_word_in(io_base);
+        model[i*2] = (data >> 8) & 0xFF;
+        model[i*2 + 1] = data & 0xFF;
+    }
+    model[40] = '\0';
+    
+    // Trim trailing spaces
+    for (int i = 39; i >= 0; i--) {
+        if (model[i] == ' ')
+            model[i] = '\0';
+        else
+            break;
+    }
+}
+
+void ata_get_serial(uint8_t channel, char* serial) {
+    uint16_t io_base = (channel == ATA_PRIMARY) ? 0x1F0 : 0x170;
+    
+    // Serial number starts at word 10 and is 20 bytes long
+    for (int i = 0; i < 10; i++) {
+        uint16_t data = port_word_in(io_base);
+        serial[i*2] = (data >> 8) & 0xFF;
+        serial[i*2 + 1] = data & 0xFF;
+    }
+    serial[20] = '\0';
+    
+    // Trim trailing spaces
+    for (int i = 19; i >= 0; i--) {
+        if (serial[i] == ' ')
+            serial[i] = '\0';
+        else
+            break;
+    }
+}
+
+uint64_t ata_get_size(uint8_t channel) {
+    uint16_t io_base = (channel == ATA_PRIMARY) ? 0x1F0 : 0x170;
+    
+    // LBA48 sector count is at words 100-103
+    uint64_t sectors = 0;
+    for (int i = 3; i >= 0; i--) {
+        uint16_t data = port_word_in(io_base);
+        sectors = (sectors << 16) | data;
+    }
+    
+    return sectors;
+}
+
+/**
+ * Читает указанное количество секторов с диска
+ * @param lba Начальный адрес сектора
+ * @param count Количество секторов для чтения
+ * @param buffer Буфер для данных
+ * @return 0 при успехе, -1 при ошибке
+ */
+int ata_read_sectors(uint64_t lba, uint32_t count, void* buffer) {
+    // Проверяем, существует ли диск
+    if (!is_ex()) {
+        printf("ATA: No disk present\n");
+        return -1;
+    }
+
+    // Проверяем параметры
+    if (buffer == NULL || count == 0) {
+        printf("ATA: Invalid parameters\n");
+        return -1;
+    }
+
+    // Получаем статус диска
+    uint8_t status = get_status();
+    if (status & STAT_ERR) {
+        printf("ATA: Device error before read\n");
+        return -1;
+    }
+
+    // Читаем сектора используя LBA48 режим
+    ata_pio_read48(lba, count, buffer);
+
+    // Проверяем статус после операции
+    status = get_status();
+    if (status & STAT_ERR) {
+        printf("ATA: Error during read operation\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+/**
+ * Записывает указанное количество секторов на диск
+ * @param lba Начальный адрес сектора
+ * @param count Количество секторов для записи
+ * @param buffer Буфер с данными
+ * @return 0 при успехе, -1 при ошибке
+ */
+int ata_write_sectors(uint64_t lba, uint32_t count, const void* buffer) {
+    // Проверяем, существует ли диск
+    if (!is_ex()) {
+        printf("ATA: No disk present\n");
+        return -1;
+    }
+
+    // Проверяем параметры
+    if (buffer == NULL || count == 0) {
+        printf("ATA: Invalid parameters\n");
+        return -1;
+    }
+
+    // Получаем статус диска
+    uint8_t status = get_status();
+    if (status & STAT_ERR) {
+        printf("ATA: Device error before write\n");
+        return -1;
+    }
+
+    // Записываем сектора используя LBA48 режим
+    ata_pio_write48(lba, count, (uint8_t*)buffer);
+
+    // Проверяем статус после операции
+    status = get_status();
+    if (status & STAT_ERR) {
+        printf("ATA: Error during write operation\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+/**
+ * Сбрасывает кэш диска на физический носитель
+ * @return 0 при успехе, -1 при ошибке
+ */
+int ata_flush(void) {
+    // Проверяем, существует ли диск
+    if (!is_ex()) {
+        printf("ATA: No disk present\n");
+        return -1;
+    }
+
+    // Отправляем команду FLUSH CACHE
+    port_byte_out(ATA_PRIMARY_COMM_REGSTAT, 0xE7);
+
+    // Ждем, пока устройство не будет готово
+    uint8_t status;
+    do {
+        status = port_byte_in(ATA_PRIMARY_COMM_REGSTAT);
+    } while (status & STAT_BSY);
+
+    // Проверяем на ошибки
+    if (status & STAT_ERR) {
+        printf("ATA: Error during flush operation\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+void init_ahci() {
+    HBA_MEM* abar = find_ahci_controller();
+    if(!abar) {
+        printf("SATA: No AHCI controller found\n");
+        return;
+    }
+
+    // Включаем AHCI режим
+    abar->ghc |= (1 << 31); // Enable AHCI
+    
+    // Проверяем порты
+    uint32_t pi = abar->pi; // Ports implemented
+    int ports_count = 0;
+    
+    printf("SATA: Scanning ports...\n");
+    
+    for(int i = 0; i < 32; i++) {
+        if(pi & (1 << i)) { // Порт реализован
+            HBA_PORT* port = &abar->ports[i];
+            uint32_t ssts = port->ssts;
+            uint8_t ipm = (ssts >> 8) & 0x0F;
+            uint8_t det = ssts & 0x0F;
+            
+            if(det == 3 && ipm == 1) { // Устройство присутствует и активно
+                ports_count++;
+                printf("SATA: Device found on port %d\n", i);
+                
+                // Инициализация порта
+                port->cmd &= ~HBA_PxCMD_ST; // Остановить команды
+                port->cmd &= ~HBA_PxCMD_FRE; // Остановить FIS receive
+                
+                // Ждем остановки
+                while(port->cmd & (HBA_PxCMD_CR | HBA_PxCMD_FR));
+                
+                // Настраиваем Command List и FIS
+                // ... (настройка DMA и других структур)
+                
+                // Запускаем порт
+                port->cmd |= HBA_PxCMD_FRE;
+                port->cmd |= HBA_PxCMD_ST;
+            }
+        }
+    }
+    
+    printf("SATA: Detected %d ports\n", ports_count);
 }

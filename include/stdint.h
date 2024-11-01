@@ -1,5 +1,5 @@
 #pragma once
-
+#include <stddef.h>
 /* Most commonly used types */
 #ifndef NULL
 #define NULL ((void *)0)
@@ -25,7 +25,6 @@ typedef unsigned long long uint64_t;
 typedef   signed long long  int64_t;
 typedef unsigned long     uintptr_t;
 typedef   signed long      intptr_t;
-typedef   signed long     ptrdiff_t;
 
 /* those are commonly provided by sys/types.h */
 typedef unsigned long         ino_t;

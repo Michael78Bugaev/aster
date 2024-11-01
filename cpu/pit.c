@@ -3,6 +3,7 @@
 #include <io/iotools.h>
 #include <io/idt.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdint.h>
 
 uint64_t ticks;
@@ -48,23 +49,6 @@ void pit_handler(struct InterruptRegisters *regs)
     //     vga[get_cursor() * 2] = ' ';
     //     vga[get_cursor() * 2 + 1] = 0x00;
     // }
-}
-
-void inwait(struct InterruptRegisters *regs)
-{
-    if (end = false)
-    {
-        if (ticks < target)
-        {
-            ticks += 1;
-        }
-        else
-        {
-            kprint("timer ended!");
-            end = true;
-            irq_install_handler(0, &pit_handler);
-        }
-    }
 }
 
 void wait(int ms)

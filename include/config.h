@@ -19,4 +19,22 @@
 #define FAT16_BAD_PATH 5
 #define FAT16_INVALID_DRIVE 6
 
+#define VAR_MAXCOUNT 512
+
+struct global_variable {
+    char *name; // имя переменной
+    enum { TYPE_INT, TYPE_STR } type; // тип переменной
+    union {
+        int int_value; // значение для int
+        char *str_value; // значение для str
+    } data; // данные переменной
+};
+
+struct global_variable var[];
+
+struct global_variable* find_variable(const char *name);
+void init_variable(const char *name, const char *value, int type);
+void free_variables();
+int get_var_count();
+
 #endif

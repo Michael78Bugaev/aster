@@ -16,6 +16,7 @@
 #include <drv/ata.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 #include <cpu/mem.h>
 #include <vga.h>
 #include <disk_interface.h>
@@ -103,10 +104,8 @@ static fstatus fat_make_entry_chain(struct dir_s* dir, uint8_t entry_cnt);
 /// Remove
 static void fat_kprint_table(struct volume_s* vol, uint32_t sector) {
 	fat_read(vol, vol->fat_lba + sector);
-	kprint("\n");
-	kprint("FAT: ");
-    kprinti(sector * 128);
-    kprint("    ");
+	printf("\n");
+	printf("fat: %d\n", sector * 128);
 	for (uint8_t i = 0; i < 128;) {
 		uint32_t curr = fat_load32(vol->buffer + i * 4);
 		
@@ -120,7 +119,7 @@ static void fat_kprint_table(struct volume_s* vol, uint32_t sector) {
 		// kprint("   ");
 		if ((i++ % 4) == 0) {
 			kprint("\n");
-			kprint("FAT: ");
+			kprint("fat: ");
 			for (int e = 0; e < 6; e++)
 			{
 				kprint_hex(sector * 128 + i);
@@ -129,7 +128,7 @@ static void fat_kprint_table(struct volume_s* vol, uint32_t sector) {
 			
 		}
 	}
-	kprint("\n");
+	printf("\n");
 }
 
 /// Copies `count` number of bytes from source to destination using byte access
@@ -203,13 +202,19 @@ static uint16_t fat_load16(const void* src) {
 /// Remove
 static void fat_kprint_sector(const uint8_t* sector) {
 	for (uint32_t i = 0; i < 512;) {
-		kprinti(sector[i]);
+		printf("\n%d: ", i);
+		for (int r = 0; r < 8; r++)
+		{
+			kprint_hex_w(sector[i + r]);
+			kprint(" ");
+		}
+		kprint_hex_w(sector[i]);
 		
 		if ((i++ % 32) == 0) {
-			kprint("\n");
+			printf("\n");
 		}
 	}
-	kprint("\n");
+	printf("\n");
 }
 
 /// Add a volume to the system volumes and assign a letter to it
@@ -382,9 +387,7 @@ static uint8_t fat_file_addr_resolve(struct file_s* file) {
 			// Check if the FAT table entry is the EOC
 			uint32_t eoc_value = new_cluster & 0xFFFFFFF;
 			if ((eoc_value >= 0xFFFFFF8) && (eoc_value <= 0xFFFFFFF)) {
-				kprint("EOC value: ");
-                kprinti(eoc_value);
-                kprint("\n");
+				printf("eoc value: %d\n", eoc_value);
 				return 0;
 			}
 			
@@ -510,6 +513,7 @@ static uint8_t fat_read(struct volume_s* vol, uint32_t lba) {
 static uint8_t fat_flush(struct volume_s* vol) {
 	if (vol->buffer_dirty) {
 		if (!disk_write(vol->disk, vol->buffer, vol->buffer_lba, 1)) {
+			printf("disk write error\n");
 			return 0;
 		}
 		vol->buffer_dirty = 0;
@@ -711,12 +715,12 @@ static fstatus fat_follow_path(struct dir_s* dir, const char* path, uint32_t len
 		// Now `frag_ptr` will point to the first character in the name
 		// fragment, and `frag_size` will contain the size
 
-		kprint("Searching for directory...\n");
+		printf("searching for directory...\n");
 
 		// Search for a matching directory name in the current directory. If
 		// matched, the `fat_dir_search` will update the `dir` pointer as well
 		if (!fat_dir_search(dir, frag_ptr, frag_size)) {
-			kprintc("Directory not found\n", 0x0C);
+			printf("error: directory not found\n");
 			return 0;
 		}
 	}	
@@ -761,7 +765,7 @@ static fstatus fat_get_vol_label(struct volume_s* vol, char* label) {
 }
 
 /// Remove
-/// kprint directory information
+/// print directory information
 void fat_kprint_info(struct info_s* info) {
 	uint32_t size = info->size;
 	char ext = 0;	
@@ -770,46 +774,28 @@ void fat_kprint_info(struct info_s* info) {
 		size /= 1000;
 		ext = file_size_ext[ext_cnt++];
 	}
-	kprint("Size: ");
-	kprinti(size);
+	printf("size: %d", size);
 	if (ext) {
-		kprint("(ext: ");
-		kprinti(ext);
-		kprint(")");
+		printf("(ext: %d)", ext);
 	}
-	kprint("\nDate: ");
+	printf("\ndate: ");
 	uint16_t time = info->w_time;
 	uint16_t date = info->w_date;
 	
-	// kprint("%d/%d/%d %d:%d\t", 
-	// 	date & 0b11111,
-	// 	(date >> 5) & 0b1111,
-	// 	((date >> 9) & 0b1111111) + 1980,
-	// 	(time >> 11) & 0b11111,
-	// 	(time >> 5) & 0b111111);
-
-    kprinti(date & 0b11111);
-    kprint("/");
-    kprinti((date >> 5) & 0b1111);
-    kprint("/");
-    kprinti(((date >> 9) & 0b1111111) + 1980);
-    kprint(" ");
-    kprinti((time >> 11) & 0b11111);
-    kprint(":");
-    kprinti((time >> 5) & 0b111111);
-    kprint("\n");
+	printf("%d/%d/%d %d:%d\t", 
+	 	date & 0b11111,
+	 	(date >> 5) & 0b1111,
+	 	((date >> 9) & 0b1111111) + 1980,
+	 	(time >> 11) & 0b11111,
+	 	(time >> 5) & 0b111111);
 		
 	if (info->attribute & ATTR_DIR) {
-		kprint("DIR    ");
+		printf(" DIR    ");
 	} else {
-		kprint("    ");
+		printf("FILE    ");
 	}
 	
-	kprint("Name: ");
-	kprint(info->name);
-	kprint(" Size: ");
-	kprinti(info->name_length);
-	kprint("\n");
+	printf("name: %s lenght: %d\n", info->name, info->name_length);
 }
 
 
@@ -823,51 +809,47 @@ void fat32_thread(void* arg) {
 	
 	// Try to mount the disk. If this is not working the disk initialize 
 	// functions may be ehh...
-	disk_mount(DISK_SD_CARD);
+	// disk_mount(DISK_SD_CARD);
 	
 	for (uint8_t i = 0; i < 6; i++) {
-		//kprint("S: %d c: %d\n", cluster_size_lut[i].clust_size, cluster_size_lut[i].sector_cnt);
-        kprint("Size: ");
-        kprinti(cluster_size_lut[i].clust_size);
-        kprint(", cluster: ");
-        kprinti(cluster_size_lut[i].sector_cnt);
-        kprint("\n");
+		printf("S: %d c: %d\n", cluster_size_lut[i].clust_size, cluster_size_lut[i].sector_cnt);
 	}
 	
 	struct volume_s* tmp = volume_get('C');
-	if (tmp == NULL) {return;}
 	uint32_t cluster;
 	clear_screen();
 	fat_get_cluster(tmp, &cluster);
 	fat_table_set(tmp, 33, 0);
 	fat_kprint_table(tmp, 0);
 
-	// kprint all the volumes on the system
-	kprint("Displaying system volumes:\n");
 	struct volume_s* vol = volume_get_first();
-	while (vol) {
+	if (vol != NULL)
+	{
+		printf("displaying system volumes:\n");
+		while (vol) {
 		for (uint8_t i = 0; i < 11; i++) {
 			if (vol->label[i]) {
 				kprinti(vol->label[i]);
 			}
 		}
-		// kprint(" (%c:)\n", vol->letter);
-        kprint(" (");
-        kprinti(vol->letter);
-        kprint(")\n");
+		printf(" (%c:)\n", vol->letter);
 		vol = vol->next;
+		}
+		printf("\n");
 	}
-	kprint("\n");
-	
+	else
+	{
+		printf("there are not any volumes.\n");
+	}
 	
 	// List all directories
 	struct dir_s dir;
 	fat_dir_open(&dir, "C:/", 0);
 	
-	struct info_s* info = (struct info_s *)find_memblock(0x00000000,
+	struct info_s* info = (struct info_s *)find_memblock(0x10000000,
 		sizeof(struct info_s));
 	fstatus status;
-	kprint("\nListing directories in: C:/\n");
+	printf("\nlist of directories in C:\n");
 	status = fat_dir_read(&dir, info);
 		
 	if (fat_memcmp(info->name, "uuuuuughh.txt", info->name_length)) {
@@ -878,7 +860,7 @@ void fat32_thread(void* arg) {
 	if (status == FSTATUS_OK) {
 		fat_kprint_info(info);
 	}
-	kprint("FAT32 is done.\n");
+	printf("FAT32 is done.\n");
 }
 
 /// Mounts a physical disk. It checks for a valid FAT32 file system in all
@@ -900,8 +882,8 @@ uint8_t disk_mount(disk_e disk) {
 
 	// Check the boot signature in the MBR
 	if (fat_load16(mount_buffer + MBR_BOOT_SIG) != MBR_BOOT_SIG_VALUE) {
-		kprint("Found the boot signature in MBR. Mounting is not possible.\n");
-		return 0;
+		printf("found the boot signature in MBR.\n");
+		// return 0;
 	}
 	
 	// Retrieve the partition info from all four partitions, thus avoiding 
@@ -998,9 +980,7 @@ struct volume_s* volume_get(char letter) {
 		}
 		vol = vol->next;
 	}
-	kprint("Unable to get drive '");
-	putchar(letter, 0x0F);
-	kprint("'!\n");
+	printf("unable to get drive '%c'", letter);
 	return NULL;
 }
 
@@ -1163,9 +1143,7 @@ fstatus fat_dir_rename(struct dir_s* dir, const char* name, uint8_t length) {
 		name_length++;
 	}
 	
-	kprint("Name length: ");
-    kprinti(name_length);
-    kprint("\n");
+	printf("name length: %d\n", name_length);
 	uint8_t entries_req = 1;
 	if (name_length > 8) {
 		entries_req = (length / 13) - 1;
@@ -1186,13 +1164,7 @@ fstatus fat_dir_rename(struct dir_s* dir, const char* name, uint8_t length) {
 	} else {
 		// Enough entry are present
 	}
-	// kprint("Ent req: %d\nEnt pres: %d\n", entries_req, entries_pres);
-    kprint("Ent req: ");
-    kprinti(entries_req);
-    kprint("\n");
-    kprint("Ent pres: ");
-    kprinti(entries_pres);
-    kprint("\n");
+	printf("Ent req: %d\nEnt pres: %d\n", entries_req, entries_pres);
 }
 
 /// Open a file and return the file object. It takes in a global path.
@@ -1233,9 +1205,8 @@ fstatus fat_file_open(struct file_s* file, const char* path, uint16_t length) {
 	file->vol = dir.vol;
 	file->size = dir.size;
 	
-	kprint("File size: ");
-    kprinti(file->size);
-    kprint("\n");
+
+	printf("file size: %d\n", file->size);
 	return FSTATUS_OK;
 }
 

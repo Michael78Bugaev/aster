@@ -1,0 +1,23 @@
+int -> multiply(a, b)
+[
+    return a * b
+]
+
+func -> start()
+[
+    int a -> 5
+    int b -> 3
+    int result -> multiply(a, b)
+    print(result)
+    return ok
+]
+
+char *name = "Artem";
+
+printf("Hello, %d!\n", name);
+
+> Hello, Artem!
+
+kprint("Hello, ");
+kprint(name);
+kprint("!\n");

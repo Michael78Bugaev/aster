@@ -1,9 +1,10 @@
-// #include <stddef.h>
-// #include <stdio.h>
-// #include <stdlib.h>
-// #include <string.h>
-// #include <drv/ata.h>
-// #include <sfat32.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <vga.h>
+#include <drv/ata.h>
+#include <sfat32.h>
 
 // extern struct filesystem *master_fs; // Assume this is defined elsewhere
 
@@ -85,3 +86,63 @@
 //     // Implement writing functionality as needed
 //     return 0; // Placeholder
 // }
+
+void printf(const char* format, ...) {
+    char** arg = (char**)&format;
+    arg++;  // Move to the first argument
+    
+    char c;
+    char buf[20];
+    
+    while ((c = *format++) != 0) {
+        if (c != '%') {
+            // Normal character
+            putchar(c, WHITE_ON_BLACK);
+            continue;
+        }
+        
+        c = *format++;
+        switch (c) {
+            case 'd': {
+                // Integer
+                int num = *(int*)arg++;
+                int_to_str(num, buf);
+                kprint(buf);
+                break;
+            }
+            case 'x': {
+                // Hexadecimal
+                uint32_t num = *(uint32_t*)arg++;
+                kprint_hex(num);
+                break;
+            }
+            case 's': {
+                // String
+                char* str = *(char**)arg++;
+                if (str) {
+                    kprint(str);
+                } else {
+                    kprint("(null)");
+                }
+                break;
+            }
+            case 'c': {
+                // Character
+                char ch = *(char*)arg++;
+                putchar(ch, WHITE_ON_BLACK);
+                break;
+            }
+            case '%': {
+                // Literal %
+                putchar('%', WHITE_ON_BLACK);
+                break;
+            }
+            default: {
+                // Unknown format specifier
+                putchar('%', WHITE_ON_BLACK);
+                putchar(c, WHITE_ON_BLACK);
+                break;
+            }
+        }
+    }
+}

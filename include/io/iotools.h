@@ -12,5 +12,7 @@ void memset(void *dest, char val, uint32_t count);
 void insw(uint16_t port, void *addr, unsigned long count);
 void outsw(uint16_t port, const void *addr, unsigned long count);
 int k_toupper(int c);
+uint32_t port_dword_in(unsigned short port);
+void port_dword_out(unsigned short port, uint32_t data);
 
 #endif

@@ -1,23 +1,21 @@
 #include <stdint.h>
 #include <cpu/mem.h>
-#include <vga.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-
-typedef unsigned long        size_t;
+#include <stddef.h>
 static uint8_t dynamic_mem_area[DYNAMIC_MEM_TOTAL_SIZE];
 static dynamic_mem_node_t *dynamic_mem_start;
 
 void init_dmem()
 {
-    kprint("dmem: initializing dmem...\n");
     dynamic_mem_start = (dynamic_mem_node_t *) dynamic_mem_area;
     dynamic_mem_start->size = DYNAMIC_MEM_TOTAL_SIZE - DYNAMIC_MEM_NODE_SIZE;
     dynamic_mem_start->next = NULL_POINTER;
     dynamic_mem_start->prev = NULL_POINTER;
-    kprint("dmem: dynamic memory managment total size: ");
-    kprintci(((int)dynamic_mem_start->size / 1024) / 1024, 0x03);
-    kprint(" Mbytes\n");
+    // kprint("dmem: dynamic memory managment total size: ");
+    // kprintci(((int)dynamic_mem_start->size / 1024) / 1024, 0x03);
+    // kprint(" mbytes\n");
 }
 void *find_memblock(dynamic_mem_node_t *dynamic_mem, size_t size) {
     // initialize the result pointer with NULL and an invalid block size
@@ -139,7 +137,6 @@ void* krealloc(void* ptr, size_t new_size)
     // Выделяем новый блок памяти
     void* new_ptr = malloc(new_size);
     if (new_ptr == NULL) {
-        kprintc("error: unable to allocate memory", 0x0C);
         return NULL;
     }
 
