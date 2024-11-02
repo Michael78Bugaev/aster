@@ -111,3 +111,27 @@ void port_dword_out(unsigned short port, uint32_t data)
     /* Функция-обертка над assembly, пишущая data (4 байта, т.е. dword) в port */
     __asm__("outl %%eax, %%dx" : : "a" (data), "d" (port));
 }
+
+void reboot_system() {
+    uint8_t good = 0x02;
+    while (good & 0x02)
+        good = port_byte_in(0x64);
+    port_byte_out(0x64, 0xFE);
+    __asm__ volatile ("hlt");
+}
+
+void shutdown_system() {
+    // Метод ACPI
+    port_word_out(0xB004, 0x2000);
+
+    // Метод APM
+    port_word_out(0x604, 0x2000);
+
+    // Если предыдущие методы не сработали, попробуем метод Bochs/QEMU
+    port_word_out(0x4004, 0x3400);
+
+    // Если ничего не сработало, просто зациклимся
+    while(1) {
+        __asm__ volatile ("hlt");
+    }
+}

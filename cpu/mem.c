@@ -9,6 +9,7 @@ static dynamic_mem_node_t *dynamic_mem_start;
 
 void init_dmem()
 {
+    printf("DMEM: Initiliazing...\n");
     dynamic_mem_start = (dynamic_mem_node_t *) dynamic_mem_area;
     dynamic_mem_start->size = DYNAMIC_MEM_TOTAL_SIZE - DYNAMIC_MEM_NODE_SIZE;
     dynamic_mem_start->next = NULL_POINTER;

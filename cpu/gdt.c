@@ -12,6 +12,7 @@ struct tss_entry_t tss_entry;
 
 void init_gdt()
 {
+    printf("GDT: Initiliazing...\n");
     gdt_ptr.limit = (sizeof(struct gdt_entry_t) * 6) - 1;
     gdt_ptr.base = (uint32_t)&gdt_entries;
 

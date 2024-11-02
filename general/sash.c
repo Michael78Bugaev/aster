@@ -2,16 +2,19 @@
 #include <string.h>
 #include <cpu/pit.h>
 #include <fs/fat32.h>
+#include <stdio.h>
 #include <cpu/mem.h>
+#include <drv/sata.h>
+#include <storage.h>
 #include <drv/ata.h>
 #include <config.h>
 #include <sfat32.h>
 #include <vga.h>
-#include <sfat32.h>
+
+bool init = false;
 
 void execute_sash(char *arg)
 {
-    f32 fat32;
     int count;
     char **args = splitString(arg, &count);
     if (count > 0)
@@ -20,18 +23,18 @@ void execute_sash(char *arg)
         {
             if (count > 1)
             {
-                kprint("Usage: >help\n\n");
+                kprint("Usage: &help\n\n");
             }
             else
             {
                 printf("Aster Operating System Shell commands:\n");
-                printf("  >help:     Displays this help message\n");
-                printf("  >clear:    Clear the screen\n");
-                printf("  >tick:     Get current tick count\n");
-                printf("  >identify: Identify disks (searching for one disk)\n            to initiliaze FAT32 on them\n");
-                printf("  >initfs:   Initiliaze FAT32 on the first disk\n");
-                printf("  >rainbow:  Show all 16 colors (for screen testing)\n");
-                printf("  >mem:      Display memory map\n");
+                printf("  &help:     Displays this help message\n");
+                printf("  &clear:    Clear the screen\n");
+                printf("  &tick:     Get current tick count\n");
+                printf("  &identify: Identify disks (searching for one disk)\n            to initiliaze FAT32 on them\n");
+                printf("  &initfs:   Initiliaze FAT32 on the first disk\n");
+                printf("  &rainbow:  Show all 16 colors (for screen testing)\n");
+                printf("  &mem:      Display memory map\n");
 
             }
         }
@@ -39,7 +42,7 @@ void execute_sash(char *arg)
         {
             if (count > 1)
             {
-                printf("Usage: >clear\n\n");
+                printf("Usage: &clear\n\n");
             }
             else
             {
@@ -48,23 +51,46 @@ void execute_sash(char *arg)
         }
         else if (strcmp(args[0], "ls") == 0)
         {
-            struct dir_s dir;
-            fat_dir_open(&dir, get_current_directory(), 1);
-            struct info_s* info = (struct info_s*)find_memblock(0x10000000, sizeof(struct info_s));
-            fstatus status;
-            status = fat_dir_read(&dir, info);
-            if (status == FSTATUS_OK)
-            {
-                fat_kprint_info(info);
+            list_directory(&FAT32, get_curdir());
+        }
+        else if (strcmp(args[0], "reboot") == 0)
+        {
+            reboot_system();
+        }
+        else if (strcmp(args[0], "shutdown") == 0)
+        {
+            shutdown_system();
+        }
+        else if (strcmp(args[0], "mkhello") == 0)
+        {
+            fat32_create_file(&FAT32, "/hello.txt");
+        }
+        else if (strcmp(args[0], "sector") == 0)
+        {
+            uint8_t test_data[512];
+            for (int i = 0; i < 512; i++) {
+                test_data[i] = i % 256;
             }
-        }
-        else if (strcmp(args[0], "identify") == 0)
-        {
-            identify();
-        }
-        else if (strcmp(args[0], "fat_table") == 0)
-        {
 
+            // Записываем тестовые данные
+            if (!sata_write_sectors(&device, 0, 1, test_data)) {
+                printf("Failed to write test data\n");
+                return;
+            }
+
+            // Читаем данные обратно
+            uint8_t read_data[512];
+            if (!sata_read_sectors(&device, 0, 1, read_data)) {
+                printf("Failed to read test data\n");
+                return;
+            }
+
+            // Сравниваем данные
+            for (int i = 0; i < 512; i++) {
+                if (test_data[i] != read_data[i]) {
+                    printf("Mismatch at byte %d: wrote %x, read %x\n", i, test_data[i], read_data[i]);
+                }
+            }
         }
         else if (strcmp(args[0], "export") == 0)
         {
@@ -144,25 +170,21 @@ void execute_sash(char *arg)
                 kprint("Usage: >str <var_name> <value>\n");
             }
         }
-        else if (strcmp(args[0], "md") == 0)
+        else if (strcmp(args[0], "mkfs") == 0)
         {
-            if (count > 1)
+            if (!init)
             {
-                if (startsWith("C:/", args[1]) == 0)
-                {
-                    fat_dir_make(args[1]);
-                }
-                else
-                {
-                    char *pathdir = get_current_directory() + '/';
-                    strcat(pathdir, args[1]);
-                    fat_dir_make(pathdir);
-                }
+                fat32_get_free_space(&FAT32);
+                init = init_fat32_filesystem(&device);
             }
             else
             {
-                kprintc("Usage: C:/>md <directory_name>\n", 0x0C);
+                kprint("Error: mkfs can only be used on an unmounted file system\n");
             }
+        }
+        else if (strcmp(args[0], "format") == 0)
+        {
+            format_drive(&device);
         }
         else if (strcmp(args[0], "verinfo") == 0)
         {
@@ -170,14 +192,7 @@ void execute_sash(char *arg)
         }
         else if (strcmp(args[0], "initfs") == 0)
         {
-            kprint("Creating FAT32...\n");
-            fat32_thread(0);
-        }
-        else if (strcmp(args[0], "shutdown") == 0)
-        {
-            port_word_out(0x604, 0x2000);
-            port_word_out(0x4004, 0x3400);
-            port_word_out(0xB004, 0x2000);
+            fat32_init(&device, &FAT32);
         }
         else if (strcmp(args[0], "rainbow") == 0)
         {
@@ -185,6 +200,7 @@ void execute_sash(char *arg)
             {
                 kprintc("#####", i);
             }
+            printf("\n");
         }
         else if (strcmp(args[0], "tick") == 0)
         {

@@ -26,3 +26,6 @@ void *memmove(void *dest, const void *src, size_t n);
 char *strdup(const char *str);
 int isalpha(char c);
 char* tostr(int value);
+int strncmp(const char *s1, const char *s2, size_t n);
+char* strtok(char* str, const char* delimiters);
+char* strchr(const char* str, int character);

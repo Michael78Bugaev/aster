@@ -322,3 +322,85 @@ char* tostr(int value) {
 
     return str;
 }
+
+int strncmp(const char *s1, const char *s2, size_t n) {
+    // Если длина для сравнения равна 0, строки считаются равными
+    if (n == 0)
+        return 0;
+
+    // Сравниваем посимвольно до n символов
+    while (n-- > 0) {
+        // Если текущие символы не равны, возвращаем их разницу
+        if (*s1 != *s2) {
+            return *(unsigned char *)s1 - *(unsigned char *)s2;
+        }
+
+        // Если достигнут конец одной из строк, прекращаем сравнение
+        if (*s1 == '\0') {
+            return 0;
+        }
+
+        // Переходим к следующим символам
+        s1++;
+        s2++;
+    }
+
+    // Если все символы до n равны
+    return 0;
+}
+
+char* strtok(char* str, const char* delimiters) {
+    static char* last_token = NULL;
+    
+    // Если str не NULL, начинаем новый процесс токенизации
+    // Если NULL, продолжаем с последней позиции
+    if (str != NULL) {
+        last_token = str;
+    } else if (last_token == NULL) {
+        return NULL;
+    }
+    
+    // Пропускаем начальные разделители
+    while (*last_token != '\0' && strchr(delimiters, *last_token) != NULL) {
+        last_token++;
+    }
+    
+    // Если достигнут конец строки, возвращаем NULL
+    if (*last_token == '\0') {
+        last_token = NULL;
+        return NULL;
+    }
+    
+    // Начало текущего токена
+    char* token_start = last_token;
+    
+    // Ищем конец текущего токена
+    while (*last_token != '\0' && strchr(delimiters, *last_token) == NULL) {
+        last_token++;
+    }
+    
+    // Если найден разделитель, заменяем его на '\0' и сохраняем позицию
+    if (*last_token != '\0') {
+        *last_token = '\0';
+        last_token++;
+    } else {
+        // Если достигнут конец строки, сбрасываем указатель
+        last_token = NULL;
+    }
+    
+    return token_start;
+}
+
+// Вспомогательная функция strchr (если её нет)
+char* strchr(const char* str, int character) {
+    while (*str != '\0') {
+        if (*str == character) {
+            return (char*)str;
+        }
+        str++;
+    }
+    if (character == '\0') {
+        return (char*)str;
+    }
+    return NULL;
+}

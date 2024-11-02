@@ -10,6 +10,7 @@ extern void idt_flush(uint32_t);
 
 void init_idt()
 {
+    printf("IDT: Initiliazing...\n");
     idt_ptr.limit = sizeof(struct idt_entry_struct) * 256 - 1;
     idt_ptr.base = (uint32_t) &idt_entries;
     memset(&idt_entries, 0, sizeof(struct idt_entry_struct) * 256);
@@ -170,7 +171,7 @@ void isr_handler(struct InterruptRegisters* resgs)
 {
     if (resgs->int_no < 32)
     {
-        printf("--< Kernel panic >--|--< %s >--", get_ex(resgs->int_no));
+        printf("<(0c)>--< Kernel panic >--|--< %s >--", get_ex(resgs->int_no));
         for(;;);
     }
 }

@@ -14,5 +14,7 @@ void outsw(uint16_t port, const void *addr, unsigned long count);
 int k_toupper(int c);
 uint32_t port_dword_in(unsigned short port);
 void port_dword_out(unsigned short port, uint32_t data);
+void reboot_system();
+void shutdown_system();
 
 #endif

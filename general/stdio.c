@@ -2,147 +2,155 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fs/fat32.h>
 #include <vga.h>
 #include <drv/ata.h>
 #include <sfat32.h>
 
-// extern struct filesystem *master_fs; // Assume this is defined elsewhere
+void hex_to_str(uint32_t num, char *str);
+void hex_to_str(uint32_t num, char *str) {
+    int i = 0;
+    
+    if (num == 0) {
+        str[i++] = '0';
+        str[i] = '\0';
+        return;
+    }
 
-// typedef struct file_entry {
-//     uint32_t first_cluster; // First cluster of the file
-//     uint32_t file_size; // Size of the file
-//     char *name; // Name of the file
-// } file_entry;
+    while (num != 0) {
+        uint32_t rem = num % 16;
+        if (rem < 10) {
+            str[i++] = rem + '0';
+        } else {
+            str[i++] = (rem - 10) + 'A';
+        }
+        num = num / 16;
+    }
 
-// static inline int entry_for_path(const char *path, file_entry *entry) {
-//     // This function should populate the file_entry structure based on the provided path
-//     // For now, let's assume it returns 0 if the file is not found, 1 if it is found
-//     // You will need to implement the logic to search for the file in your filesystem
-//     // This is a placeholder implementation
-//     if (strcmp(path, "/example.txt") == 0) { // Example hardcoded file
-//         entry->first_cluster = 2; // Example cluster number
-//         entry->file_size = 1024; // Example file size
-//         entry->name = strdup("example.txt");
-//         return 1;
-//     }
-//     return 0;
-// }
+    str[i] = '\0';
 
-// FILE *fopen(const char *pathname, const char *mode) {
-//     file_entry entry;
-//     if (!entry_for_path(pathname, &entry)) {
-//         return NULL; // File not found
-//     }
+    // Reverse the string
+    int start = 0;
+    int end = i - 1;
+    while (start < end) {
+        char temp = str[start];
+        str[start] = str[end];
+        str[end] = temp;
+        start++;
+        end--;
+    }
+}
 
-//     FILE *f = kmalloc(sizeof(FILE) + master_fs->cluster_size);
-//     f->curr_cluster = entry.first_cluster;
-//     f->file_size = entry.file_size;
-//     f->fptr = 0;
-//     f->buffptr = 0;
-//     getCluster(master_fs, f->currbuf, f->curr_cluster);
-//     free(entry.name); // Free the dynamically allocated name
-//     return f;
-// }
+uint8_t parse_color_code(char bg, char fg);
+uint8_t parse_color_code(char bg, char fg) {
+    uint8_t background = 0;
+    uint8_t foreground = 0;
+    
+    // Преобразование шестнадцатеричного символа в число
+    if (bg >= '0' && bg <= '9') {
+        background = bg - '0';
+    } else if (bg >= 'a' && bg <= 'f') {
+        background = bg - 'a' + 0xa;
+    } else if (bg >= 'A' && bg <= 'F') {
+        background = bg - 'A' + 0xa;
+    }
 
-// int fclose(FILE *stream) {
-//     kfree(stream);
-//     return 0; // Return 0 on success
-// }
-
-// size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream) {
-//     size_t bytes_to_read = size * nmemb;
-//     size_t bytes_read = 0;
-
-//     if (stream->fptr + bytes_to_read > stream->file_size) {
-//         bytes_to_read = stream->file_size - stream->fptr;
-//     }
-
-//     while (bytes_to_read > 0) {
-//         if (stream->buffptr + bytes_to_read > master_fs->cluster_size) {
-//             size_t to_read_in_this_cluster = master_fs->cluster_size - stream->buffptr;
-//             memcpy(ptr + bytes_read, stream->currbuf + stream->buffptr, to_read_in_this_cluster);
-//             bytes_read += to_read_in_this_cluster;
-//             stream->buffptr = 0;
-//             stream->curr_cluster = get_next_cluster_id(master_fs, stream->curr_cluster);
-//             if (stream->curr_cluster >= EOC) {
-//                 stream->fptr += bytes_read;
-//                 return bytes_read;
-//             }
-//             getCluster(master_fs, stream->currbuf, stream->curr_cluster);
-//             bytes_to_read -= to_read_in_this_cluster;
-//         } else {
-//             memcpy(ptr + bytes_read, stream->currbuf + stream->buffptr, bytes_to_read);
-//             bytes_read += bytes_to_read;
-//             stream->buffptr += bytes_to_read;
-//             bytes_to_read = 0;
-//         }
-//     }
-
-//     stream->fptr += bytes_read;
-//     return bytes_read;
-// }
-
-// size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
-//     // Implement writing functionality as needed
-//     return 0; // Placeholder
-// }
-
+    if (fg >= '0' && fg <= '9') {
+        foreground = fg - '0';
+    } else if (fg >= 'a' && fg <= 'f') {
+        foreground = fg - 'a' + 0xa;
+    } else if (fg >= 'A' && fg <= 'F') {
+        foreground = fg - 'A' + 0xa;
+    }
+    
+    return (background << 4) | foreground;
+}
 void printf(const char* format, ...) {
-    char** arg = (char**)&format;
-    arg++;  // Move to the first argument
-    
     char c;
-    char buf[20];
+    uint8_t current_color = 0x07; // По умолчанию светло-серый текст на черном фоне
+    char **arg = (char **) &format;
+    int *int_arg;
+    char *str_arg;
+    char num_buf[32];
+    unsigned int uint_arg;
     
+    arg++; // Переходим к первому аргументу после format
+
     while ((c = *format++) != 0) {
+        if (c == '<' && *format == '(') {
+            format++; // Пропускаем '('
+            
+            // Читаем два символа цветового кода
+            char bg_color = *format++;
+            char fg_color = *format++;
+            
+            if (*format == ')' && *(format + 1) == '>') {
+                current_color = parse_color_code(bg_color, fg_color);
+                format += 2; // Пропускаем ')>'
+                continue;
+            }
+        }
+        
         if (c != '%') {
-            // Normal character
-            putchar(c, WHITE_ON_BLACK);
+            putchar(c, current_color);
             continue;
         }
         
         c = *format++;
         switch (c) {
-            case 'd': {
-                // Integer
-                int num = *(int*)arg++;
-                int_to_str(num, buf);
-                kprint(buf);
-                break;
-            }
-            case 'x': {
-                // Hexadecimal
-                uint32_t num = *(uint32_t*)arg++;
-                kprint_hex(num);
-                break;
-            }
-            case 's': {
-                // String
-                char* str = *(char**)arg++;
-                if (str) {
-                    kprint(str);
-                } else {
-                    kprint("(null)");
+            case 'd':
+                int_arg = (int *)arg++;
+                intToString(*int_arg, num_buf);
+                for (char *ptr = num_buf; *ptr; ptr++) {
+                    putchar(*ptr, current_color);
                 }
                 break;
-            }
-            case 'c': {
-                // Character
-                char ch = *(char*)arg++;
-                putchar(ch, WHITE_ON_BLACK);
+
+            case 'u':
+                uint_arg = *(unsigned int *)arg++;
+                intToString(uint_arg, num_buf);
+                for (char *ptr = num_buf; *ptr; ptr++) {
+                    putchar(*ptr, current_color);
+                }
                 break;
-            }
-            case '%': {
-                // Literal %
-                putchar('%', WHITE_ON_BLACK);
+
+            case 'x':
+                int_arg = (int *)arg++;
+                hex_to_str(*int_arg, num_buf);
+                putchar('0', current_color);
+                putchar('x', current_color);
+                for (char *ptr = num_buf; *ptr; ptr++) {
+                    putchar(*ptr, current_color);
+                }
                 break;
-            }
-            default: {
-                // Unknown format specifier
-                putchar('%', WHITE_ON_BLACK);
-                putchar(c, WHITE_ON_BLACK);
+
+            case 'c':
+                int_arg = (int *)arg++;
+                putchar((char)*int_arg, current_color);
                 break;
-            }
+
+            case 's':
+                str_arg = *arg++;
+                if (str_arg) {
+                    while (*str_arg) {
+                        putchar(*str_arg++, current_color);
+                    }
+                } else {
+                    char *null_str = "(null)";
+                    while (*null_str) {
+                        putchar(*null_str++, current_color);
+                    }
+                }
+                break;
+
+            case '%':
+                putchar('%', current_color);
+                break;
+
+            default:
+                putchar('%', current_color);
+                putchar(c, current_color);
+                break;
         }
     }
 }

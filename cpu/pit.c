@@ -20,6 +20,7 @@ void inwait(struct InterruptRegisters *regs);
 
 void init_pit()
 {
+    printf("PIT: Initiliazing...\n");
     ticks = 0;
     target = 0;
     irq_install_handler(0, &pit_handler);

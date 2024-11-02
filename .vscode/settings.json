@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "stdint.h": "c",
-        "iotools.h": "c"
-    }
+        "iotools.h": "c",
+        "*.tempc": "cpp"
+    },
+    "C_Cpp.errorSquiggles": "disabled"
 }

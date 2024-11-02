@@ -18,8 +18,11 @@
 #define WHITE_ON_BLACK 0x07		// 0x0 == white fg, 0xf == black bg
 
 // Адреса I/O портов для взаимодействия с экраном.
-#define REG_SCREEN_CTRL 0x3d4	// этот порт для описания данных
-#define REG_SCREEN_DATA 0x3d5	// а этот порт для самих данных
+
+#define REG_SCREEN_CTRL 0x3d4
+#define REG_SCREEN_DATA 0x3d5
+#define VGA_OFFSET_LOW 0x0f
+#define VGA_OFFSET_HIGH 0x0e
 
 void	kprint(uint8_t *str);
 void kprintc(uint8_t *str, uint8_t attr);
@@ -34,6 +37,7 @@ void	scroll_line();
 uint16_t		get_cursor();
 void	set_cursor(uint16_t pos);
 // Получение координаты X курсора
+
 uint8_t get_cursor_x();
 uint8_t get_cursor_y();
 
