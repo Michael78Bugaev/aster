@@ -1,13 +1,15 @@
-Aster is not Linux, it is a simple kernel for small tasks.
-At the moment of development (at the last moment of the 
-README.md commit), this kernel can do little. It cannot 
-connect to the Internet, does not have its own compiler, 
-and does not even have a text editor! But it has support 
-for small FAT16, IDE drives, PIC timer, IDT interrupts, 
-its own command shell SASH (Super Aster Shell) and support 
-for a keyboard with a screen. 
+# Aster
+The new 32-bit kernel using **GRUB**.
 
-I am developing a project alone and am looking for a team 
-of developers like me.
-
-Welcome to Aster Kernel!
+At the latest moment this kernel has:
+1. VGA text driver
+2. PIT timer
+3. SATA disk support (up to 2GB)
+4. FAT32 support (in progress)
+5. Standard chipset driver
+6. PCI support
+### How to compile?
+To compile, run `$ make`
+Warning: the Aster kernel will run on QEMU, you need to
+add SATA disk to work with filesystem.
+To clear temp files, run `$ make clean`
