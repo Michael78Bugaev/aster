@@ -14,44 +14,85 @@ void init_ahci(HBA_MEM *abar)
     // Enable interrupts
     abar->ghc |= (1 << 1);
     
-    printf("AHCI initialized\n");
+    // Проверяем порты
     probe_port(abar);
+    
+    printf("AHCI initialization complete\n");
+    
+    // Очищаем все прерывания
+    abar->is = (uint32_t)-1;
+    
+    // Убеждаемся, что все порты остановлены корректно
+    for (int i = 0; i < 32; i++) {
+        if (abar->pi & (1 << i)) {
+            stop_cmd(&abar->ports[i]);
+        }
+    }
 }
 
 void probe_port(HBA_MEM *abar)
 {
-    uint32_t pi = abar->pi;
+    uint32_t pi = abar->pi; // Получаем информацию о портах
     int i = 0;
-    while (i < 32)
+    int ports_found = 0;
+    int max_port_count = 32; // Максимальное количество портов
+
+    printf("Probing SATA ports...\n");
+    printf("Port Implementation (PI) value: %x\n", pi);
+
+    while (i < max_port_count && pi != 0)
     {
+        printf("Checking port %d (PI: %x)\n", i, pi);
         if (pi & 1)
         {
             int dt = check_type(&abar->ports[i]);
-            if (dt == AHCI_DEV_SATA)
+            printf("Port %d type: %d\n", i, dt);
+            
+            switch (dt)
             {
-                printf("SATA drive found at port %d\n", i);
-                port_rebase(&abar->ports[i], i);
-            }
-            else if (dt == AHCI_DEV_SATAPI)
-            {
-                printf("SATAPI drive found at port %d\n", i);
-            }
-            else if (dt == AHCI_DEV_SEMB) {
-                printf("SEMB drive found at port %d\n", i);
-            }
-            else if (dt == AHCI_DEV_PM) 
-            {
-                printf("PM drive found at port %d\n", i);
-            }
-            else
-            {
-                printf("No drive found at port %d\n", i);
+                case AHCI_DEV_SATA:
+                    printf("SATA drive found at port %d\n", i);
+                    printf("Attempting to rebase port %d\n", i);
+                    port_rebase(&abar->ports[i], i);
+                    printf("Port %d rebased successfully\n", i);
+                    ports_found++;
+                    break;
+                case AHCI_DEV_SATAPI:
+                    printf("SATAPI drive found at port %d\n", i);
+                    ports_found++;
+                    break;
+                case AHCI_DEV_SEMB:
+                    printf("SEMB drive found at port %d\n", i);
+                    ports_found++;
+                    break;
+                case AHCI_DEV_PM:
+                    printf("PM drive found at port %d\n", i);
+                    ports_found++;
+                    break;
+                case AHCI_DEV_NULL:
+                default:
+                    printf("No drive found at port %d\n", i);
+                    break;
             }
         }
-
+        else
+        {
+            printf("Port %d is inactive\n", i);
+        }
+        
         pi >>= 1;
         i++;
+        
+        if (pi == 0)
+        {
+            printf("All ports checked. Exiting probe.\n");
+            break;
+        }
     }
+
+    printf("Port probing complete.\n");
+    printf("Total SATA devices found: %d\n", ports_found);
+    printf("Probe function completed successfully.\n");
 }
 
 int check_type(HBA_PORT *port)
@@ -81,58 +122,51 @@ int check_type(HBA_PORT *port)
 
 void port_rebase(HBA_PORT *port, int portno)
 {
-    stop_cmd(port); // Stop command engine
+    printf("Rebasing port %d\n", portno);
+    
+    // Остановка команд перед ребазированием
+    stop_cmd(port);
 
-    // Command list offset: 1K*portno
-    // Command list entry size = 32
-    // Command list entry maxim count = 32
-    // Command list maxim size = 32*32 = 1K per port
+    // Установка адреса списка команд
     port->clb = AHCI_BASE + (portno << 10);
     port->clbu = 0;
-    memset((void *)(port->clb), 0, 1024);
+    memset((void*)(port->clb), 0, 1024);
 
-    // FIS offset: 32K+256*portno
-    // FIS entry size = 256 bytes per port
+    // Установка адреса области приема FIS
     port->fb = AHCI_BASE + (32 << 10) + (portno << 8);
     port->fbu = 0;
-    memset((void *)(port->fb), 0, 256);
+    memset((void*)(port->fb), 0, 256);
 
-    // Command table offset: 40K + 8K*portno
-    // Command table size = 256*32 = 8K per port
-    HBA_CMD_HEADER *cmdheader = (HBA_CMD_HEADER *)(port->clb);
+    // Инициализация области командной таблицы
+    HBA_CMD_HEADER *cmdheader = (HBA_CMD_HEADER*)(port->clb);
     for (int i = 0; i < 32; i++)
     {
-        cmdheader[i].prdtl = 8; // 8 prdt entries per command table
-        // Command table offset: 40K + 8K*portno + cmdheader_index*256
+        cmdheader[i].prdtl = 8; // 8 записей PRDT на команду
         cmdheader[i].ctba = AHCI_BASE + (40 << 10) + (portno << 13) + (i << 8);
         cmdheader[i].ctbau = 0;
-        memset((void *)cmdheader[i].ctba, 0, 256);
+        memset((void*)cmdheader[i].ctba, 0, 256);
     }
 
-    start_cmd(port); // Start command engine
+    // Запуск команд после ребазирования
+    start_cmd(port);
+    
+    printf("Port %d rebased successfully\n", portno);
 }
 
 void start_cmd(HBA_PORT *port)
 {
-    // Wait until CR (bit15) is cleared
-    while (port->cmd & HBA_PxCMD_CR)
-        ;
-
-    // Set FRE (bit4) and ST (bit0)
+    while (port->cmd & HBA_PxCMD_CR);
     port->cmd |= HBA_PxCMD_FRE;
     port->cmd |= HBA_PxCMD_ST;
 }
 
 void stop_cmd(HBA_PORT *port)
 {
-    // Clear ST (bit0)
     port->cmd &= ~HBA_PxCMD_ST;
-
-    // Clear FRE (bit4)
     port->cmd &= ~HBA_PxCMD_FRE;
-
-    // Wait until FR (bit14), CR (bit15) are cleared
-    while (1)
+    
+    // Ожидание остановки
+    while(1)
     {
         if (port->cmd & HBA_PxCMD_FR)
             continue;

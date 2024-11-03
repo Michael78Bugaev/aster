@@ -54,7 +54,7 @@ void pci_scan_bus(void) {
                 if ((vendor_device & 0xFFFF) != 0xFFFF) {
                     pci_device_t dev_info;
                     pci_get_device_info(bus, device, function, &dev_info);
-                    printf("PCI Device: %x:%x\n", dev_info.vendor_id, dev_info.device_id);
+                    printf("Found PCI device at %x:%x\n", dev_info.vendor_id, dev_info.device_id);
                 }
             }
         }

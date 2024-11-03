@@ -63,6 +63,7 @@ void execute_sash(char *arg)
         }
         else if (strcmp(args[0], "mkhello") == 0)
         {
+            fat32_get_free_space(&FAT32);
             fat32_create_file(&FAT32, "/hello.txt");
         }
         else if (strcmp(args[0], "sector") == 0)
@@ -184,7 +185,7 @@ void execute_sash(char *arg)
         }
         else if (strcmp(args[0], "format") == 0)
         {
-            format_drive(&device);
+            fat32_format(&device);
         }
         else if (strcmp(args[0], "verinfo") == 0)
         {

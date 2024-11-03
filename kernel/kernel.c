@@ -4,6 +4,8 @@
 #include <io/idt.h>
 #include <cpu/mem.h>
 #include <cpu/pit.h>
+#include <drv/chipset.h>
+#include <drv/sata_chipset.h>
 #include <stdio.h>
 #include <storage.h>
 #include <drv/ata.h>
@@ -24,40 +26,29 @@ void kentr(void) {
     // Инициализация памяти
     init_dmem();
     
-    printf("Scanning PCI bus...\n");
-    pci_scan_bus();
-    printf("PCI bus scanned.\n");
-    if (sata_initialize(&device, 0x1F0, 0x3F6, 0x170, true)) {
-        printf("SATA device initialized.\n");
-        // malloc(sizeof(uint8_t[512]));
-        // uint8_t read_buf[512];
-        // if (sata_read_sectors(&device, 0, 1, read_buf)) {
-        //     clear_screen();
-        //     for (int i = 0; i < 128; i++) {
-        //         for (int u = 0; u < 4; u++)
-        //         {
-        //             wait(10);
-        //             kprint_hex_w(read_buf[i]);
-        //             kprint(" ");
+    // Инициализация чипсета
+    if (chipset_init()) {
+        chipset_info_t info;
+        chipset_get_info(&info);
+        printf("Chipset initialized successfully\n");
+        printf("Vendor ID: %x\n", info.vendor_id);
+        printf("Device ID: %x\n", info.device_id);
+        
+        // Инициализация PCI
+        pci_scan_bus();
+        printf("PCI bus scanned\n");
 
-        //         }
-        //         printf("\n");
-        //     }
-        //     mfree(&read_buf);
-        // } else {
-        //     printf("Read failed.\n");
-        // }
-
-        // malloc(sizeof(uint8_t[512]));
-        // uint8_t write_buf[512];
-        // if (sata_write_sectors(&device, 0, 1, write_buf)) {
-        //     printf("Write successful.\n");
-        //     mfree(&write_buf);
-        // } else {
-        //     printf("Write failed.\n");
-        // }
+        // Инициализация SATA
+        if (sata_chipset_init()) {
+            printf("SATA chipset initialized successfully\n");
+            wait(2000);
+            // Идентификация SATA устройства
+            sata_chipset_identify();
+        } else {
+            printf("Failed to initialize SATA chipset\n");
+        }
     } else {
-        printf("Failed to initialize SATA device.\n");
+        printf("Failed to initialize chipset\n");
     }
 
     printf("\n<(0a)>Aster<(07)> 32-bit kernel 1.00\n");

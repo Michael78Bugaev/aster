@@ -28,6 +28,7 @@ bool fat32_init(sata_device_t* device, fat32_context_t* context) {
     // Read boot sector
     uint8_t boot_sector_buffer[SECTOR_SIZE];
     printf("FAT32: Reading boot sector...\n");
+    context->boot_sector.sectors_per_cluster = 8;
     
     if (!sata_read_sectors(device, 0, 1, boot_sector_buffer)) {
         printf("FAT32: Failed to read boot sector\n");
@@ -71,6 +72,8 @@ bool fat32_init(sata_device_t* device, fat32_context_t* context) {
     printf("FAT32: First FAT sector: %d\n", context->first_fat_sector);
     printf("FAT32: First data sector: %d\n", context->first_data_sector);
     printf("FAT32: Root cluster: %d\n", context->root_dir_cluster);
+
+    context->boot_sector.bytes_per_sector = SECTOR_SIZE;
 
     return true;
 }
@@ -123,8 +126,8 @@ uint32_t fat32_get_next_cluster(fat32_context_t* context, uint32_t current_clust
         return 0x0FFFFFF7;  // Bad cluster
     }
 
-    printf("DEBUG: Getting next cluster for %u (0x%x)\n", current_cluster, current_cluster);
-    
+    printf("DEBUG: Getting next cluster for %u (%x)\n", current_cluster, current_cluster);
+
     uint32_t fat_offset = current_cluster * 4;
     uint32_t fat_sector = context->first_fat_sector + (fat_offset / context->boot_sector.bytes_per_sector);
     uint32_t ent_offset = fat_offset % context->boot_sector.bytes_per_sector;
@@ -138,19 +141,19 @@ uint32_t fat32_get_next_cluster(fat32_context_t* context, uint32_t current_clust
     }
 
     // Безопасное чтение 4 байт без проблем выравнивания
-    uint32_t next_cluster = buffer[ent_offset] |
-                           ((uint32_t)buffer[ent_offset + 1] << 8) |
-                           ((uint32_t)buffer[ent_offset + 2] << 16) |
+    uint32_t next_cluster = buffer[ent_offset] | 
+                           ((uint32_t)buffer[ent_offset + 1] << 8) | 
+                           ((uint32_t)buffer[ent_offset + 2] << 16) | 
                            ((uint32_t)buffer[ent_offset + 3] << 24);
-    
+
     next_cluster &= 0x0FFFFFFF; // Маскируем верхние 4 бита
 
-    printf("DEBUG: Next cluster value: %u (0x%x)\n", next_cluster, next_cluster);
-    
+    printf("DEBUG: Next cluster value: %u (%x)\n", next_cluster, next_cluster);
+
     if (next_cluster >= 0x0FFFFFF8) {
         printf("DEBUG: End of cluster chain detected\n");
     }
-    
+
     return next_cluster;
 }
 
@@ -596,7 +599,7 @@ bool list_directory(fat32_context_t* context, const char* path) {
 
     uint32_t bytes_per_sector = context->boot_sector.bytes_per_sector;
     uint32_t sectors_per_cluster = context->sectors_per_cluster;
-    
+
     if (bytes_per_sector == 0 || sectors_per_cluster == 0) {
         printf("Error: Invalid bytes per sector (%u) or sectors per cluster (%u)\n", 
                bytes_per_sector, sectors_per_cluster);
@@ -616,7 +619,10 @@ bool list_directory(fat32_context_t* context, const char* path) {
     printf("Name          Size      Attributes\n");
     printf("------------------------------------\n");
 
-    while (current_cluster >= 2 && current_cluster < 0x0FFFFFF8) {
+    uint32_t cluster_count = 0;
+    uint32_t max_clusters = 1000; // Предел для предотвращения бесконечного цикла
+
+    while (current_cluster >= 2 && current_cluster < 0x0FFFFFF8 && cluster_count < max_clusters) {
         printf("DEBUG: Processing cluster %u (0x%x)\n", current_cluster, current_cluster);
 
         if (!fat32_read_cluster(context, current_cluster, cluster_buffer)) {
@@ -653,11 +659,11 @@ bool list_directory(fat32_context_t* context, const char* path) {
             filename[12] = '\0';
 
             printf("%s ", filename);
-            
+
             if (entries[i].attributes & 0x10) {
                 printf("<DIR>      ");
             } else {
-                printf("%d b ", entries[i].file_size);
+                printf(" Size: %d bytes", entries[i].file_size);
             }
 
             printf("%c%c%c%c%c\n",
@@ -670,7 +676,7 @@ bool list_directory(fat32_context_t* context, const char* path) {
 
         uint32_t next_cluster = fat32_get_next_cluster(context, current_cluster);
         printf("DEBUG: Next cluster: %u (0x%x)\n", next_cluster, next_cluster);
-        
+
         if (next_cluster == current_cluster) {
             printf("Error: Circular cluster chain detected\n");
             mfree(cluster_buffer);
@@ -680,13 +686,17 @@ bool list_directory(fat32_context_t* context, const char* path) {
             break;  // End of cluster chain
         }
         current_cluster = next_cluster;
+        cluster_count++;
+    }
+
+    if (cluster_count >= max_clusters) {
+        printf("Error: Exceeded maximum cluster chain length\n");
     }
 
     printf("------------------------------------\n");
     mfree(cluster_buffer);
     return true;
 }
-
 bool init_fat32_filesystem(sata_device_t* device) {
     printf("FAT32: Starting filesystem initialization\n");
 
