@@ -28,6 +28,7 @@ void init_ahci(HBA_MEM *abar)
             stop_cmd(&abar->ports[i]);
         }
     }
+    printf("done\n");
 }
 
 void probe_port(HBA_MEM *abar)
@@ -37,41 +38,29 @@ void probe_port(HBA_MEM *abar)
     int ports_found = 0;
     int max_port_count = 32; // Максимальное количество портов
 
-    printf("Probing SATA ports...\n");
-    printf("Port Implementation (PI) value: %x\n", pi);
-
     while (i < max_port_count && pi != 0)
     {
-        printf("Checking port %d (PI: %x)\n", i, pi);
         if (pi & 1)
         {
             int dt = check_type(&abar->ports[i]);
-            printf("Port %d type: %d\n", i, dt);
             
             switch (dt)
             {
                 case AHCI_DEV_SATA:
-                    printf("SATA drive found at port %d\n", i);
-                    printf("Attempting to rebase port %d\n", i);
                     port_rebase(&abar->ports[i], i);
-                    printf("Port %d rebased successfully\n", i);
                     ports_found++;
                     break;
                 case AHCI_DEV_SATAPI:
-                    printf("SATAPI drive found at port %d\n", i);
                     ports_found++;
                     break;
                 case AHCI_DEV_SEMB:
-                    printf("SEMB drive found at port %d\n", i);
                     ports_found++;
                     break;
                 case AHCI_DEV_PM:
-                    printf("PM drive found at port %d\n", i);
                     ports_found++;
                     break;
                 case AHCI_DEV_NULL:
                 default:
-                    printf("No drive found at port %d\n", i);
                     break;
             }
         }
@@ -85,14 +74,9 @@ void probe_port(HBA_MEM *abar)
         
         if (pi == 0)
         {
-            printf("All ports checked. Exiting probe.\n");
             break;
         }
     }
-
-    printf("Port probing complete.\n");
-    printf("Total SATA devices found: %d\n", ports_found);
-    printf("Probe function completed successfully.\n");
 }
 
 int check_type(HBA_PORT *port)
@@ -122,7 +106,6 @@ int check_type(HBA_PORT *port)
 
 void port_rebase(HBA_PORT *port, int portno)
 {
-    printf("Rebasing port %d\n", portno);
     
     // Остановка команд перед ребазированием
     stop_cmd(port);
@@ -149,8 +132,6 @@ void port_rebase(HBA_PORT *port, int portno)
 
     // Запуск команд после ребазирования
     start_cmd(port);
-    
-    printf("Port %d rebased successfully\n", portno);
 }
 
 void start_cmd(HBA_PORT *port)

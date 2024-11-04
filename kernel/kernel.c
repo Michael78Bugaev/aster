@@ -25,31 +25,6 @@ void kentr(void) {
     init_pit();
     // Инициализация памяти
     init_dmem();
-    
-    // Инициализация чипсета
-    if (chipset_init()) {
-        chipset_info_t info;
-        chipset_get_info(&info);
-        printf("Chipset initialized successfully\n");
-        printf("Vendor ID: %x\n", info.vendor_id);
-        printf("Device ID: %x\n", info.device_id);
-        
-        // Инициализация PCI
-        pci_scan_bus();
-        printf("PCI bus scanned\n");
-
-        // Инициализация SATA
-        if (sata_chipset_init()) {
-            printf("SATA chipset initialized successfully\n");
-            wait(2000);
-            // Идентификация SATA устройства
-            sata_chipset_identify();
-        } else {
-            printf("Failed to initialize SATA chipset\n");
-        }
-    } else {
-        printf("Failed to initialize chipset\n");
-    }
 
     printf("\n<(0a)>Aster<(07)> 32-bit kernel 1.00\n");
     printf("2024-2025 Created by Michael Bugaev\n");

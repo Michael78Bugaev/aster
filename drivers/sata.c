@@ -1,17 +1,37 @@
 #include <drv/sata.h>
 #include <io/iotools.h>
 #include <cpu/achi.h>
+#include <cpu/pit.h>
 #include <stdio.h>
 
-// Ожидание готовности устройства
+// Ожидание готовности устройства с тайм-аутом
 void sata_wait_ready(sata_device_t *device) {
-    while (port_byte_in(device->base + SATA_STATUS) & SATA_STATUS_BSY);
+    const int timeout = 10000; // Максимальное время ожидания (в циклах)
+    int count = 0;
+
+    //  while (port_byte_in(device->base + SATA_STATUS) & SATA_STATUS_BSY) {
+    //     printf("%d", port_byte_in(device->base + SATA_STATUS) & SATA_STATUS_BSY);
+    //      count++;
+    //      if (count > timeout) {
+    //          printf("SATA: Device not ready (timeout)\n");
+    //          return; // Выход из функции при тайм-ауте
+    //      }
+    //      // Добавим небольшую задержку, чтобы не нагружать процессор
+    //      for (volatile int i = 0; i < 10; i++); // простая задержка
+    //  }
+
+    // Проверка на наличие ошибок после выхода из цикла
+    uint8_t status = port_byte_in(device->base + SATA_STATUS);
+    if (status & SATA_STATUS_ERR) {
+        printf("SATA: Device error detected\n");
+        return; // Обработка ошибки
+    }
 }
 
 // Мягкий сброс устройства
 void sata_soft_reset(sata_device_t *device) {
     port_byte_out(device->control, 0x04);
-    for(int i = 0; i < 1000; i++); // Небольшая задержка
+    //for(int i = 0; i < 1000; i++); // Небольшая задержка
     port_byte_out(device->control, 0x00);
     sata_wait_ready(device);
 }
@@ -28,10 +48,10 @@ bool sata_initialize(sata_device_t *device, uint16_t base, uint16_t control, uin
 
     // Проверяем наличие устройства
     uint8_t status = port_byte_in(device->base + SATA_STATUS);
-    if (status == 0xFF) {
-        printf("No SATA device detected\n");
-        return false;
-    }
+    // if (status == 0xFF) {
+    //     printf("No SATA device detected\n");
+    //     return false;
+    // }
 
     // Идентифицируем устройство
     return sata_identify(device);
@@ -55,18 +75,19 @@ bool sata_identify(sata_device_t *device) {
         printf("Device does not exist\n");
         return false;
     }
-
+    int i = 0;
     // Ждем данные
-    while(1) {
-        status = port_byte_in(device->base + SATA_STATUS);
-        // if (status & SATA_STATUS_ERR) {
-        //     printf("Error during identify\n");
-        //     //return false;
-        // }
-        if (!(status & SATA_STATUS_BSY) && (status & SATA_STATUS_DRQ)) {
-            break;
-        }
-    }
+    // while(1) {
+    //     status = port_byte_in(device->base + SATA_STATUS);
+    //     if (status & SATA_STATUS_ERR) {
+    //         printf("Error during identify\n");
+    //         //return false;
+    //     }
+    //     if (!(status & SATA_STATUS_BSY) && (status & SATA_STATUS_DRQ)) {
+    //         break;
+    //     }
+    //     i++;
+    // }
 
     // Читаем идентификационные данные
     for (int i = 0; i < 256; i++) {

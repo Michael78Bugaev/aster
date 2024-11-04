@@ -52,6 +52,7 @@ void execute_sash(char *arg)
         else if (strcmp(args[0], "ls") == 0)
         {
             list_directory(&FAT32, get_curdir());
+            strnone(arg);
         }
         else if (strcmp(args[0], "reboot") == 0)
         {
@@ -85,13 +86,15 @@ void execute_sash(char *arg)
                 printf("Failed to read test data\n");
                 return;
             }
-
+            int old = get_cursor();
             // Сравниваем данные
             for (int i = 0; i < 512; i++) {
                 if (test_data[i] != read_data[i]) {
-                    printf("Mismatch at byte %d: wrote %x, read %x\n", i, test_data[i], read_data[i]);
+                    set_cursor(0);
+                    printf("<(f0)>Error at byte %d: wrote %x, read %x", i, test_data[i], read_data[i]);
                 }
             }
+            set_cursor(old);
         }
         else if (strcmp(args[0], "export") == 0)
         {
@@ -191,7 +194,7 @@ void execute_sash(char *arg)
         {
             kprint("\nAster 32-bit kernel 1.00 \n2024-2025 Created by Michael Bugaev\n");
         }
-        else if (strcmp(args[0], "initfs") == 0)
+        else if (strcmp(args[0], "mountfs") == 0)
         {
             fat32_init(&device, &FAT32);
         }
@@ -229,9 +232,7 @@ void execute_sash(char *arg)
             }
             else
             {
-                kprintc("Unknown command \"", 0x0C);
-                kprintc(args[0], 0x0C);
-                kprintc("\"\n", 0x0C);
+                kprintc("Unknown command", 0x0C);
             }
         }
     }

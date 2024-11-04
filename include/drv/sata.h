@@ -50,7 +50,7 @@ typedef struct {
     HBA_PORT port;
 } sata_device_t;
 
-sata_device_t device;
+sata_device_t  device;
 
 // Function prototypes
 bool sata_initialize(sata_device_t *device, uint16_t base, uint16_t control, uint16_t bm_ide, bool master);
