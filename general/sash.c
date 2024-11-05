@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <cpu/mem.h>
 #include <drv/sata.h>
+#include <chset/chipset.h>
 #include <storage.h>
 #include <drv/ata.h>
 #include <config.h>
@@ -174,17 +175,9 @@ void execute_sash(char *arg)
                 kprint("Usage: >str <var_name> <value>\n");
             }
         }
-        else if (strcmp(args[0], "mkfs") == 0)
+        else if (strcmp(args[0], "diag_chipset") == 0)
         {
-            if (!init)
-            {
-                fat32_get_free_space(&FAT32);
-                init = init_fat32_filesystem(&device);
-            }
-            else
-            {
-                kprint("Error: mkfs can only be used on an unmounted file system\n");
-            }
+            chipset_run_diagnostics();
         }
         else if (strcmp(args[0], "format") == 0)
         {

@@ -4,19 +4,18 @@
 #include <io/idt.h>
 #include <cpu/mem.h>
 #include <cpu/pit.h>
-#include <drv/chipset.h>
 #include <drv/sata_chipset.h>
 #include <stdio.h>
 #include <storage.h>
 #include <drv/ata.h>
 #include <fs/fat32.h>
+#include <chset/chipset.h>
 #include <drv/sata.h>
 #include <io/kb.h>
 #include <sash.h>
 #include <progress.h>
 
 void kentr(void) {
-    clear_screen();
     // Инициализация GDT
     init_gdt();
     // Инициализация IDT
@@ -25,6 +24,8 @@ void kentr(void) {
     init_pit();
     // Инициализация памяти
     init_dmem();
+
+    chipset_initialize();  
 
     printf("\n<(0a)>Aster<(07)> 32-bit kernel 1.00\n");
     printf("2024-2025 Created by Michael Bugaev\n");
