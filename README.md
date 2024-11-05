@@ -13,6 +13,8 @@ At the latest moment this kernel has:
 6. PCI support
 ### How to compile?
 To compile, run `$ make`
-Warning: the Aster kernel will run on QEMU, you need to
+
+**Warning**: the Aster kernel will run on QEMU, you need to
 add SATA disk to work with filesystem.
+
 To clear temp files, run `$ make clean`
