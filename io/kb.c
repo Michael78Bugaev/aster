@@ -2,7 +2,6 @@
 #include <io/iotools.h>
 #include <vga.h>
 #include <stdio.h>
-#include <fs/fat32.h>
 #include <sash.h>
 #include <string.h>
 #include <stdint.h>
@@ -360,7 +359,7 @@ void sash(struct InterruptRegisters *regs)
                 enter = true;
                 add_to_history(input);
                 execute_sash(input);
-                printf("<(02)>masteruser<(0f)>: <(0d)>%s<(0e)> &<(07)>", get_curdir());
+                printf("masteruser: %s &", "/");
                 strnone(input);
             }
             else;    

@@ -145,3 +145,28 @@ irq_common_stub:
     add     esp, 8
     sti
     iret
+
+global _insb
+global _insw
+
+_insb:
+  push ebp
+  mov ebp, esp
+  
+  xor eax, eax 
+  mov edx, [ebp + 8]
+  in al, dx
+
+  pop ebp
+  ret
+
+_insw:
+  push ebp
+  mov ebp, esp
+  
+  xor eax, eax 
+  mov edx, [ebp + 8]
+  in ax, dx
+
+  pop ebp
+  ret

@@ -2,7 +2,11 @@
     "files.associations": {
         "stdint.h": "c",
         "iotools.h": "c",
-        "*.tempc": "cpp"
+        "*.tempc": "cpp",
+        "mem.h": "c",
+        "sata.h": "c",
+        "disk.h": "c",
+        "progress.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

@@ -19,6 +19,17 @@
 #define FAT16_BAD_PATH 5
 #define FAT16_INVALID_DRIVE 6
 
+#define ALL_OK 0
+#define IO_ERROR 1
+#define INVALID_ARGUMENT_ERROR 2
+#define NO_MEMORY_ERROR 3
+#define BAD_PATH_ERROR 4 
+#define FILE_SYSTEM_NOT_US_ERROR 5
+#define READ_ONLY_ERROR 6
+#define UNIMPLEMENTED_ERROR 7
+#define INITIALIZE_SLOT_TAKEN 8
+#define INVALID_FORMAT_ERROR 9
+
 #define VAR_MAXCOUNT 512
 
 struct global_variable {

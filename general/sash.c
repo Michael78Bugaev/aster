@@ -1,15 +1,10 @@
 #include <sash.h>
 #include <string.h>
 #include <cpu/pit.h>
-#include <fs/fat32.h>
 #include <stdio.h>
 #include <cpu/mem.h>
-#include <drv/sata.h>
 #include <chset/chipset.h>
-#include <storage.h>
-#include <drv/ata.h>
 #include <config.h>
-#include <sfat32.h>
 #include <vga.h>
 
 bool init = false;
@@ -52,8 +47,7 @@ void execute_sash(char *arg)
         }
         else if (strcmp(args[0], "ls") == 0)
         {
-            list_directory(&FAT32, get_curdir());
-            strnone(arg);
+            printf("LS command\n");
         }
         else if (strcmp(args[0], "reboot") == 0)
         {
@@ -65,37 +59,11 @@ void execute_sash(char *arg)
         }
         else if (strcmp(args[0], "mkhello") == 0)
         {
-            fat32_get_free_space(&FAT32);
-            fat32_create_file(&FAT32, "/hello.txt");
+            printf("make 'hello.txt' file!\n");
         }
         else if (strcmp(args[0], "sector") == 0)
         {
-            uint8_t test_data[512];
-            for (int i = 0; i < 512; i++) {
-                test_data[i] = i % 256;
-            }
-
-            // Записываем тестовые данные
-            if (!sata_write_sectors(&device, 0, 1, test_data)) {
-                printf("Failed to write test data\n");
-                return;
-            }
-
-            // Читаем данные обратно
-            uint8_t read_data[512];
-            if (!sata_read_sectors(&device, 0, 1, read_data)) {
-                printf("Failed to read test data\n");
-                return;
-            }
-            int old = get_cursor();
-            // Сравниваем данные
-            for (int i = 0; i < 512; i++) {
-                if (test_data[i] != read_data[i]) {
-                    set_cursor(0);
-                    printf("<(f0)>Error at byte %d: wrote %x, read %x", i, test_data[i], read_data[i]);
-                }
-            }
-            set_cursor(old);
+            printf("don't touch me, i'm reading sector, which is not implemented yet\n");
         }
         else if (strcmp(args[0], "export") == 0)
         {
@@ -177,19 +145,11 @@ void execute_sash(char *arg)
         }
         else if (strcmp(args[0], "diag_chipset") == 0)
         {
-            chipset_run_diagnostics();
-        }
-        else if (strcmp(args[0], "format") == 0)
-        {
-            fat32_format(&device);
+            printf("diagchset v1.0\nError: not implemented yet\n");
         }
         else if (strcmp(args[0], "verinfo") == 0)
         {
             kprint("\nAster 32-bit kernel 1.00 \n2024-2025 Created by Michael Bugaev\n");
-        }
-        else if (strcmp(args[0], "mountfs") == 0)
-        {
-            fat32_init(&device, &FAT32);
         }
         else if (strcmp(args[0], "rainbow") == 0)
         {

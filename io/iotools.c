@@ -91,6 +91,16 @@ void outsw(uint16_t port, const void *addr, unsigned long count)
                   : "memory");
 }
 
+void insb(uint16_t port, void *addr, unsigned long count) {
+    // Используем ассемблер для выполнения операции ввода
+    asm volatile (
+        "cld; rep insb"  // cld - устанавливает направление чтения в памяти
+        : "+D" (addr), "+c" (count)  // Указываем, что addr и count будут изменены
+        : "d" (port)  // Указываем порт, из которого будем читать
+        : "memory"  // Указываем, что память может быть изменена
+    );
+}
+
 int k_toupper(int c) {
     if(c >= 97 && c <= 122) {
         return c - 32;
