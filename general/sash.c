@@ -1,6 +1,7 @@
 #include <sash.h>
 #include <string.h>
 #include <cpu/pit.h>
+#include <fs/initrd.h>
 #include <stdio.h>
 #include <cpu/mem.h>
 #include <chset/chipset.h>
@@ -30,9 +31,9 @@ void execute_sash(char *arg)
                 printf("  &identify: Identify disks (searching for one disk)\n            to initiliaze FAT32 on them\n");
                 printf("  &initfs:   Initiliaze FAT32 on the first disk\n");
                 printf("  &rainbow:  Show all 16 colors (for screen testing)\n");
-                printf("  &mem:      Display memory map\n");
 
             }
+            return;
         }
         else if (strcmp(args[0], "clear") == 0)
         {
@@ -44,10 +45,12 @@ void execute_sash(char *arg)
             {
                 clear_screen();
             }
+            return;
         }
         else if (strcmp(args[0], "ls") == 0)
         {
-            printf("LS command\n");
+            list_directory(current_directory);
+            return;
         }
         else if (strcmp(args[0], "reboot") == 0)
         {
@@ -57,13 +60,13 @@ void execute_sash(char *arg)
         {
             shutdown_system();
         }
-        else if (strcmp(args[0], "mkhello") == 0)
-        {
-            printf("make 'hello.txt' file!\n");
+        if (strcmp(args[0], "cat") == 0) {
+            
+            return;
         }
         else if (strcmp(args[0], "sector") == 0)
         {
-            printf("don't touch me, i'm reading sector, which is not implemented yet\n");
+            
         }
         else if (strcmp(args[0], "export") == 0)
         {
@@ -87,6 +90,7 @@ void execute_sash(char *arg)
                     kprint("\n");
                 }
             }
+            return;
         }
         else if (strcmp(args[0], "echo") == 0)
         {
@@ -124,6 +128,7 @@ void execute_sash(char *arg)
             {
                 kprint("Usage: echo <variable_name> | \"hello world\" | 12345\n");
             }
+            return;
         }
         else if (strcmp(args[0], "int") == 0)
         {
@@ -133,6 +138,7 @@ void execute_sash(char *arg)
             } else {
                 kprint("Usage: >int <var_name> <value>\n");
             }
+            return;
         }
         else if (strcmp(args[0], "str") == 0)
         {
@@ -142,22 +148,26 @@ void execute_sash(char *arg)
             } else {
                 kprint("Usage: >str <var_name> <value>\n");
             }
+            return;
         }
         else if (strcmp(args[0], "diag_chipset") == 0)
         {
-            printf("diagchset v1.0\nError: not implemented yet\n");
+            printf("diagchset v1.0\nError: .\n");
+            return;
         }
         else if (strcmp(args[0], "verinfo") == 0)
         {
-            kprint("\nAster 32-bit kernel 1.00 \n2024-2025 Created by Michael Bugaev\n");
+            printf("\n%s \n2024-2025 Created by Michael Bugaev\n", OS_VERSION);
+            return;
         }
         else if (strcmp(args[0], "rainbow") == 0)
         {
             for (int i = 0; i < 16; i++)
             {
-                kprintc("#####", i);
+                kprintc("####", i);
             }
             printf("\n");
+            return;
         }
         else if (strcmp(args[0], "tick") == 0)
         {
@@ -171,6 +181,7 @@ void execute_sash(char *arg)
                 kprinti(get_ticks());
                 kprint("ms\n");
             }
+            return;
         }
         else
         {
@@ -185,7 +196,7 @@ void execute_sash(char *arg)
             }
             else
             {
-                kprintc("Unknown command", 0x0C);
+                printf("sash: %s: incorrect command\n", args[0]);
             }
         }
     }

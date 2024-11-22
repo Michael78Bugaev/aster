@@ -69,3 +69,8 @@ int get_var_count()
 {
     return var_count;
 }
+
+void start_global_config()
+{
+    
+}

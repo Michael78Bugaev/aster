@@ -6,7 +6,10 @@
         "mem.h": "c",
         "sata.h": "c",
         "disk.h": "c",
-        "progress.h": "c"
+        "progress.h": "c",
+        "p_parser.h": "c",
+        "config.h": "c",
+        "string.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

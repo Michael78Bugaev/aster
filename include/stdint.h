@@ -14,6 +14,10 @@
 #define true 1
 #endif
 
+#define ERROR(value) (void*)(value)
+#define ERROR_I(value) (int)(value)
+#define ISERR(value) ((int)(value) < 0)
+
 /* stdint types */
 typedef unsigned char       uint8_t;
 typedef   signed char        int8_t;

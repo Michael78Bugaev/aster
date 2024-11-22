@@ -2,6 +2,7 @@
 #define CONFIG_H
 #include <stdint.h>
 
+
 #define FAT16_MAX_FILESYSTEMS 10
 #define FAT16_MAX_HEAP_ALLOCATIONS 56
 #define FAT16_MEMORY_BLOCK_SIZE 512
@@ -30,6 +31,10 @@
 #define INITIALIZE_SLOT_TAKEN 8
 #define INVALID_FORMAT_ERROR 9
 
+#define ROOT_DIR "/"
+
+#define OS_VERSION "Aster 32-bit kernel 0.07"
+
 #define VAR_MAXCOUNT 512
 
 struct global_variable {
@@ -47,5 +52,6 @@ struct global_variable* find_variable(const char *name);
 void init_variable(const char *name, const char *value, int type);
 void free_variables();
 int get_var_count();
+void start_global_config();
 
 #endif

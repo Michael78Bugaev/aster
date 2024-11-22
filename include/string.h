@@ -29,3 +29,6 @@ char* tostr(int value);
 int strncmp(const char *s1, const char *s2, size_t n);
 char* strtok(char* str, const char* delimiters);
 char* strchr(const char* str, int character);
+char tolower(char s1);
+int istrncmp(const char *str1, const char *str2, int n);
+char *strrchr(const char *str, int character);
