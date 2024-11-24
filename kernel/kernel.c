@@ -30,12 +30,11 @@ void kentr(void) {
 
     init_vfs();
     printf("\n");
-    uint8_t welcome_data[] = "Welcome!";
-    File *welcome = new_file("/README", welcome_data, sizeof(welcome_data));
-    list_directory(current_directory);
+    uint8_t init[] = "clear\nverinfo\n";
+    File *init_src = new_file("/init", init, sizeof(init));
+    
+    execute_init("/init");
 
-    execute_sash("verinfo");
-
-    printf("\nmasteruser: %s &", "/");
+    printf("\nmasteruser: %s &", current_directory->name);
     irq_install_handler(1, &sash);
 }

@@ -4,8 +4,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-static Directory *root;
-
 Directory* fscreate_directory(const char *name, Directory *parent);
 
 void init_vfs() {
@@ -20,6 +18,26 @@ void init_vfs() {
     devfs = create_directory("/dev");
     userfs = create_directory("/user");
     sysfs = create_directory("/sys");
+
+    uint8_t *data = "lalalaaaa\nalalaaaa";
+
+    File *help_bin = new_file("/exec/help.bin", NULL, NULL);
+    File *clear_bin = new_file("/exec/clear.bin", NULL, NULL);
+    File *ls_bin = new_file("/exec/ls.bin", NULL, NULL);
+    File *cd_bin = new_file("/exec/cd.bin", NULL, NULL);
+    File *mkdir_bin = new_file("/exec/mkdir.bin", NULL, NULL);
+    File *rm_bin = new_file("/exec/rm.bin", NULL, NULL);
+    File *cp_bin = new_file("/exec/cp.bin", NULL, NULL);
+    File *mv_bin = new_file("/exec/mv.bin", NULL, NULL);
+    File *cat_bin = new_file("/exec/cat.bin", NULL, NULL);
+    File *echo_bin = new_file("/exec/echo.bin", NULL, NULL);
+    File *mkdirp_bin = new_file("/exec/mkdirp.bin", NULL, NULL);
+    File *touch_bin = new_file("/exec/touch.bin", NULL, NULL);
+    File *rmrf_bin = new_file("/exec/rmrf.bin", NULL, NULL);
+    File *chmod_bin = new_file("/exec/chmod.bin", NULL, NULL);
+    File *chown_bin = new_file("/exec/chown.bin", NULL, NULL);
+    File *chgrp_bin = new_file("/exec/chgrp.bin", data, sizeof(data));
+    File *ln_bin = new_file("/exec/ln.bin", NULL, NULL);
 }
 
 Directory* get_root_directory() {
@@ -75,7 +93,7 @@ File* create_file(const char *name, const uint8_t *data, uint32_t size, Director
     strncpy(new_file->name, name, MAX_FILENAME_LENGTH);
     new_file->size = size;
     new_file->data = (uint8_t *)malloc(size);
-    memcpy(new_file->data, data, size);
+    strncpy(new_file->data, data, size);
 
     dir->files[dir->file_count++] = new_file;
     return new_file;
@@ -143,16 +161,20 @@ void rename_directory(const char *old_name, const char *new_name, Directory *par
 }
 
 void list_directory(Directory *dir) {
+    if (dir == NULL) {
+        printf("ls: error: directory not found.\n");
+        return;
+    }
     int dir_count = 0, qfile_count = 0;
     for (uint32_t i = 0; i < dir->file_count; i++) {
-        printf("<file> %s\n", dir->files[i]->name);
+        printf(" f %s\n", dir->files[i]->name);
         qfile_count++;
     }
     for (uint32_t i = 0; i < dir->dir_count; i++) {
-        printf("<dir> %s\n", dir->subdirs[i]->name);
+        printf(" d %s\n", dir->subdirs[i]->name);
         dir_count++;
     }
-    printf("total dirs: %d  files: %d\n", dir_count, qfile_count);
+    printf("total %d\n", dir_count + qfile_count);
 }
 
 Directory* find_or_create_directory(const char *path) {

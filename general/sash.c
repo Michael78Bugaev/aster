@@ -1,7 +1,10 @@
 #include <sash.h>
 #include <string.h>
 #include <cpu/pit.h>
+#include <fs/file.h>
 #include <fs/initrd.h>
+#include <sedit.h>
+#include <fs/dir.h>
 #include <stdio.h>
 #include <cpu/mem.h>
 #include <chset/chipset.h>
@@ -9,6 +12,15 @@
 #include <vga.h>
 
 bool init = false;
+
+void execute_ls(char *path);
+void execute_mkdir(char *name);
+void execute_touch(char *name);
+void execute_cd(char *path);
+void delete_directory_recursively(Directory *dir);
+void execute_rm(char *name, int recursive, int force);
+void execute_cat(char *name);
+void execute_edit(char *filename);
 
 void execute_sash(char *arg)
 {
@@ -49,7 +61,80 @@ void execute_sash(char *arg)
         }
         else if (strcmp(args[0], "ls") == 0)
         {
-            list_directory(current_directory);
+            if (count == 1)
+            {
+                list_directory(current_directory);
+            }
+            else
+            {
+                if (startsWith(args[1], ".") == 0)
+                {
+                    list_directory(current_directory);
+                }
+                else if (startsWith(args[1], "..") == 0)
+                {
+                    if (strcmp(current_directory->name, "/") == 0);
+                    else
+                    {
+                        list_directory(current_directory->parent);
+                    }
+                }
+                else
+                {
+
+                }
+            }
+            return;
+        }
+        else if (strcmp(args[0], "sedit") == 0) {
+            if (count > 1) {
+                execute_edit(args[1]); // Передаем имя файла в редактор
+            } else {
+                execute_edit(NULL); // Запускаем редактор без загрузки файла
+            }
+            return;
+        }
+        else if (strcmp(args[0], "mkdir") == 0) {
+            if (count > 1) {
+                execute_mkdir(args[1]);
+            } else {
+                printf("Usage: mkdir <directory>\n");
+            }
+            return;
+        } else if (strcmp(args[0], "touch") == 0) {
+            if (count > 1) {
+                execute_touch(args[1]);
+            } else {
+                printf("Usage: touch <file>\n");
+            }
+            return;
+        } else if (strcmp(args[0], "rm") == 0) {
+            int recursive = 0;
+            int force = 0;
+            char *target = NULL;
+
+            for (int i = 1; i < count; i++) {
+                if (strcmp(args[i], "-r") == 0) {
+                    recursive = 1;
+                } else if (strcmp(args[i], "-f") == 0) {
+                    force = 1;
+                } else {
+                    target = args[i];
+                }
+            }
+
+            if (target) {
+                execute_rm(target, recursive, force);
+            } else {
+                printf("Usage: rm [-r] [-f] <file/directory>\n");
+            }
+            return;
+        } else if (strcmp(args[0], "cat") == 0) {
+            if (count > 1) {
+                execute_cat(args[1]);
+            } else {
+                printf("Usage: cat <file>\n");
+            }
             return;
         }
         else if (strcmp(args[0], "reboot") == 0)
@@ -60,13 +145,22 @@ void execute_sash(char *arg)
         {
             shutdown_system();
         }
-        if (strcmp(args[0], "cat") == 0) {
-            
+        if (strcmp(args[0], "cd") == 0) {
+            if (count == 1) {
+                printf("Usage: &cd <directory>\n");
+            } else {
+                // Обрабатываем аргумент для cd
+                change_directory(args[1]);
+            }
             return;
         }
-        else if (strcmp(args[0], "sector") == 0)
+        else if (strcmp(args[0], "debug") == 0)
         {
-            
+            run_debug();
+        }
+        else if (strcmp(args[0], "debug_end") == 0)
+        {
+            irq_install_handler(0, &pit_handler);
         }
         else if (strcmp(args[0], "export") == 0)
         {
@@ -201,4 +295,131 @@ void execute_sash(char *arg)
         }
     }
     else;
+}
+
+void execute_ls(char *path) {
+    Directory *dir = (path && strcmp(path, ".") != 0) ? find_directory(path, current_directory) : current_directory;
+    if (dir) {
+        list_directory(dir);
+    } else {
+        printf("ls: %s: No such directory\n", path);
+    }
+}
+
+void execute_mkdir(char *name) {
+    if (create_directory(name)) {
+    } else {
+        printf("mkdir: error: %s: Directory already exists or failed to create\n", name);
+    }
+}
+
+void execute_touch(char *name) {
+    // Создаем пустой файл
+    File *file = new_file(name, NULL, 0);
+    if (file) {
+    } else {
+        printf("touch: %s: Failed to create file\n", name);
+    }
+}
+
+void execute_cd(char *path) {
+    
+}
+
+void delete_directory_recursively(Directory *dir) {
+    for (uint32_t i = 0; i < dir->file_count; i++) {
+        mfree(dir->files[i]->data);
+        mfree(dir->files[i]);
+    }
+    for (uint32_t i = 0; i < dir->dir_count; i++) {
+        delete_directory_recursively(dir->subdirs[i]);
+        mfree(dir->subdirs[i]);
+    }
+}
+
+void execute_rm(char *name, int recursive, int force) {
+    Directory *target_dir = find_directory(name, current_directory);
+    if (target_dir) {
+        if (recursive) {
+            delete_directory_recursively(target_dir);
+        } else {
+            printf("rm: %s: directory is not empty, use -r to remove\n", name);
+        }
+    } else {
+        File *file = find_file(name, current_directory);
+        if (file) {
+            delete_file(name, current_directory);
+            printf("File removed: %s\n", name);
+        } else {
+            printf("rm: %s: no such file or directory\n", name);
+        }
+    }
+}  
+
+void execute_cat(char *name) {
+    // Копируем путь для обработки
+    char *path_copy = strdup(name);
+    char *token = strtok(path_copy, "/");
+    Directory *current_dir = root; // Начинаем с корневой директории
+
+    // Обработка полного пути
+    while (token != NULL) {
+        // Проверяем, является ли это последним токеном
+        if (strtok(NULL, "/") == NULL) {
+            // Мы находимся на последнем элементе, который должен быть файлом
+            File *file = find_file(token, current_dir);
+            if (file) {
+                // Проверяем, что это действительно файл
+                if (file->data != NULL) {
+                    for (uint32_t i = 0; i < file->size; i++) {
+                        putchar(file->data[i], 0x07); // Выводим каждый байт
+                    }
+                    putchar('\n', 0x07); // Переход на новую строку после вывода
+                } else {
+                    printf("cat: %s: File is empty\n", name);
+                }
+                mfree(path_copy);
+                return;
+            } else {
+                printf("cat: %s: No such file\n", name);
+                mfree(path_copy);
+                return;
+            }
+        } else {
+            // Если это не последний токен, ищем директорию
+            Directory *next_dir = find_directory(token, current_dir);
+            if (next_dir == NULL) {
+                printf("cat: %s: No such file\n", name);
+                mfree(path_copy);
+                return;
+            }
+            current_dir = next_dir; // Переходим в подкаталог
+        }
+        token = strtok(NULL, "/");
+    }
+
+    mfree(path_copy);
+}
+
+void execute_edit(char *filename) {
+    EditorBuffer editor_buffer;
+    init_editor(&editor_buffer); // Инициализация редактора
+
+    if (filename) {
+        load_file(&editor_buffer, filename); // Загружаем файл, если указан
+    }
+
+    // Запускаем основной цикл редактора
+    while (1) {
+        display_editor(&editor_buffer); // Отображаем редактор
+        // Здесь может быть логика для обработки ввода и выхода из редактора
+        // Например, можно использовать keyboard_irq_handler как обработчик ввода
+    }
+
+    free_editor_resources(&editor_buffer); // Освобождаем ресурсы перед выходом
+}
+
+void run_debug()
+{
+    irq_install_handler(0, &debug_handler);
 }

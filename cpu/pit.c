@@ -68,3 +68,21 @@ uint64_t get_ticks()
 {
     return ticks;
 }
+
+void set_ticks(uint64_t tticks)
+{
+    ticks = tticks;
+}
+
+void debug_handler(struct InterruptRegisters *regs)
+{
+    // uint32_t cr2;
+    // uint32_t ds;
+    // uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
+    // uint32_t int_no, err_code;
+    // uint32_t eip, csm, eflags, useresp, ss;
+    ticks++;
+    int old = get_cursor();
+    set_cursor(0);
+    printf("<(70)>edi: %x, esi: %x, eax: %x<(07)>\n", regs->edi, regs->esi, regs->eax);
+}

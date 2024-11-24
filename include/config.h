@@ -53,5 +53,6 @@ void init_variable(const char *name, const char *value, int type);
 void free_variables();
 int get_var_count();
 void start_global_config();
+void execute_init(const char *filename);
 
 #endif

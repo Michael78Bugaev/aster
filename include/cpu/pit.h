@@ -10,5 +10,7 @@ void init_pit();
 void pit_handler(struct InterruptRegisters *regs);
 void wait(int ms);
 uint64_t get_ticks();
+void set_ticks(uint64_t tticks);
+void debug_handler(struct InterruptRegisters *regs);
 
 #endif

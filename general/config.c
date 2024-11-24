@@ -1,6 +1,9 @@
 #include <config.h>
+#include <fs/initrd.h>
+#include <fs/file.h>
 #include <stdint.h>
 #include <string.h>
+#include <sash.h>
 #include <vga.h>
 #include <cpu/mem.h>
 
@@ -72,5 +75,9 @@ int get_var_count()
 
 void start_global_config()
 {
+    
+}
+
+void execute_init(const char *filename) {
     
 }

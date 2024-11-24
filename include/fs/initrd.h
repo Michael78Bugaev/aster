@@ -22,6 +22,8 @@ typedef struct Directory {
     uint32_t dir_count;
 } Directory;
 
+Directory *root;
+
 Directory *current_directory;
 
 Directory *execfs;

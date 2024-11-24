@@ -2,6 +2,8 @@
 #include <io/iotools.h>
 #include <vga.h>
 #include <stdio.h>
+#include <fs/initrd.h>
+#include <fs/dir.h>
 #include <sash.h>
 #include <string.h>
 #include <stdint.h>
@@ -359,7 +361,23 @@ void sash(struct InterruptRegisters *regs)
                 enter = true;
                 add_to_history(input);
                 execute_sash(input);
-                printf("masteruser: %s &", "/");
+                
+                if (strcmp(current_directory->name, "/") == 0)
+                {
+                  printf("\nmasteruser: / &");
+                  strnone(input);
+                  return;
+                }
+
+                if (startsWith(current_directory->name, "/") == 0)
+                {
+                  printf("\nmasteruser: /%s &", current_directory->name);
+                }
+                else
+                {
+                  printf("\nmasteruser: %s &", current_directory->name);
+                }
+                
                 strnone(input);
             }
             else;    

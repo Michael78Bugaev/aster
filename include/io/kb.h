@@ -82,6 +82,13 @@
 #define KEY_TAB 0x0F
 #define KEY_UP 0x48
 
+struct Key
+{
+    uint8_t scancode;
+    uint8_t press;
+};
+
+
 void set_barrier(int n);
 void handler(struct InterruptRegisters *regs);
 void agent_handler(struct InterruptRegisters *regs);

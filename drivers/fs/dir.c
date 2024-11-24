@@ -24,6 +24,8 @@ void change_directory(const char *path) {
     } else if (strcmp(path, "..") == 0) {
         if (current_directory->parent) {
             current_directory = current_directory->parent; // Переход к родительской директории
+            // remove_null_chars(current_directory->parent->name);
+            // strcpy(current_directory->name, current_directory->parent->name);
         }
         return;
     }

@@ -3,7 +3,7 @@
 
 #include <fs/initrd.h>
 
-void read_file(const char *name, Directory *dir);
+uint8_t* read_file(const char *name, Directory *dir);
 void write_file(const char *name, const uint8_t *data, uint32_t size, Directory *dir);
 
 #endif // FILE_H

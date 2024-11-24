@@ -1,13 +1,15 @@
 #include <fs/file.h>
 #include <stdio.h>
+#include <string.h>
 
-void read_file(const char *name, Directory *dir) {
+uint8_t* read_file(const char *name, Directory *dir) {
     File *file = find_file(name, dir);
     if (file) {
-        printf("Reading file: %s\n", file->name);
-        // Здесь можно добавить код для обработки данных файла
+        remove_null_chars(file->data);
+        return file->data;
     } else {
-        printf("File not found: %s\n", name);
+        printf("%s: file not found\n", name);
+        return NULL;
     }
 }
 
