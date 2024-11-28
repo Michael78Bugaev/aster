@@ -356,7 +356,7 @@ void sash(struct InterruptRegisters *regs)
         case 0x1C:
             if (press == 0)
             {
-                kprint("\n");
+                //kprint("\n");
                 //input[0] = '\0';
                 enter = true;
                 add_to_history(input);
@@ -364,18 +364,18 @@ void sash(struct InterruptRegisters *regs)
                 
                 if (strcmp(current_directory->name, "/") == 0)
                 {
-                  printf("\nmasteruser: / &");
+                  printf("\n/ &");
                   strnone(input);
                   return;
                 }
 
                 if (startsWith(current_directory->name, "/") == 0)
                 {
-                  printf("\nmasteruser: /%s &", current_directory->name);
+                  printf("\n/%s &", current_directory->name);
                 }
                 else
                 {
-                  printf("\nmasteruser: %s &", current_directory->name);
+                  printf("\n%s &", current_directory->name);
                 }
                 
                 strnone(input);

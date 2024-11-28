@@ -28,6 +28,7 @@ void execute_sash(char *arg)
     char **args = splitString(arg, &count);
     if (count > 0)
     {
+        printf("\n");
         if (strcmp(args[0], "help") == 0)
         {
             if (count > 1)

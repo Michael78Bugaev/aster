@@ -35,6 +35,6 @@ void kentr(void) {
     
     execute_init("/init");
 
-    printf("\nmasteruser: %s &", current_directory->name);
+    printf("\n%s &", current_directory->name);
     irq_install_handler(1, &sash);
 }
