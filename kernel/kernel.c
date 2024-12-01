@@ -40,16 +40,12 @@ void kentr(uint32_t magic, struct multiboot_info* boot_info) {
         write_buffer[i] = (uint8_t)i; // Пример данных: последовательные числа
     }
 
-    // Запись данных на первый диск (drive 0) в сектор 0
-    ata_write(0, 0, 1, write_buffer);
-    printf("Data written to drive 0, sector 0.\n");
-
     // Чтение данных с первого диска (drive 0) из сектора 0
-    ata_read(0, 0, 1, read_buffer);
+    ata_read(0, 0, 0, read_buffer);
     printf("Data read from drive 0, sector 0:\n");
 
     // Вывод прочитанных данных
-    for (int i = 0; i < 512; i++) {
+    for (int i = 0; i < 16; i++) {
         if (i % 16 == 0) {
             printf("\n");
         }
@@ -57,12 +53,13 @@ void kentr(uint32_t magic, struct multiboot_info* boot_info) {
     }
     printf("\n");
 
-    // Проверка соответствия записанных и прочитанных данных
-    if (memcmp(read_buffer, write_buffer, 512) == 0) {
-        printf("Data verification successful: written data matches read data.\n");
-    } else {
-        printf("Data verification failed: written data does not match read data.\n");
+    for (int i = 0; i < 16; i++) {
+        if (i % 16 == 0) {
+            printf("\n");
+        }
+        printf("%c", read_buffer[i]);
     }
+    printf("\n");
 
     init_vfs();
     printf("\n");

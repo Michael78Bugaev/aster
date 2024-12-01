@@ -4,6 +4,7 @@
 #include <fs/file.h>
 #include <fs/initrd.h>
 #include <sedit.h>
+#include <drv/ata.h>
 #include <fs/dir.h>
 #include <stdio.h>
 #include <cpu/mem.h>
@@ -68,6 +69,23 @@ void execute_sash(char *arg)
                 clear_screen();
             }
             return;
+        }
+        else if (strcmp(args[0], "sectorin") == 0)
+        {
+            uint8_t buffer[512] = "Hello Aster!";
+            ata_write(0, 0, 0, &buffer);
+        }
+        else if (strcmp(args[0], "sectorout") == 0)
+        {
+            uint8_t buffer[512];
+            ata_read(0, 0, 0, &buffer);
+            for (int i = 0; i < 16; i++) {
+                if (i % 16 == 0) {
+                    printf("\n");
+                }
+                printf("%c", buffer[i]);
+            }
+            printf("\n");
         }
         else if (strcmp(args[0], "ls") == 0)
         {

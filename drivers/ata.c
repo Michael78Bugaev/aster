@@ -47,7 +47,7 @@ void ata_write(uint8_t drive, uint32_t lba, uint8_t sector_count, const void *bu
 
     // Ожидание завершения операции
     while (!(port_byte_in(ata_devices[drive].base + ATA_STATUS_REG) & 0x08));
-
+    printf("writing\n");
     // Запись данных
     for (int i = 0; i < sector_count * 256; i++) {
         port_word_out(ata_devices[drive].base + ATA_DATA_REG, ((const uint16_t *)buffer)[i]);
