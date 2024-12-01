@@ -269,6 +269,54 @@ const char* get_device_name(uint16_t vendor_id, uint16_t device_id) {
                 case 0x100E:
                     return "Intel 82540EM Gigabit Ethernet Controller";
                     break;
+                case 0xA000:
+                    return "Intel Atom Processor D4xx/D5xx/N4xx/N5xx DMI Bridge";
+                    break;
+                case 0xA001:
+                    return "Intel Atom Processor D4xx/D5xx/N4xx/N5xx Integrated Graphics Controller";
+                    break;
+                case 0x27D8:
+                    return "Intel NM10/ICH7 Family High Definition Audio Controller";
+                    break;
+                case 0x27D0:
+                    return "Intel NM10/ICH7 Family PCI Express Port 1";
+                    break;
+                case 0x27D2:
+                    return "Intel NM10/ICH7 Family PCI Express Port 2";
+                    break;
+                case 0x27D4:
+                    return "Intel NM10/ICH7 Family PCI Express Port 3";
+                    break;
+                case 0x27D6:
+                    return "Intel NM10/ICH7 Family PCI Express Port 4";
+                    break;
+                case 0x27C8:
+                    return "Intel NM10/ICH7 Family USB UHCI Controller #1";
+                    break;
+                case 0x27C9:
+                    return "Intel NM10/ICH7 Family USB UHCI Controller #2";
+                    break;
+                case 0x27CA:
+                    return "Intel NM10/ICH7 Family USB UHCI Controller #3";
+                    break;
+                case 0x27CB:
+                    return "Intel NM10/ICH7 Family USB UHCI Controller #4";
+                    break;
+                case 0x27CC:
+                    return "Intel NM10/ICH7 Family USB2 EHCI Controller";
+                    break;
+                case 0x2448:
+                    return "Intel 82801 Mobile PCI Bridge";
+                    break;
+                case 0x27BC:
+                    return "Intel NM10 Family LPC Controller";
+                    break;
+                case 0x27C1:
+                    return "Intel NM10/ICH7 Family SATA Controller [AHCI mode]";
+                    break;
+                case 0x27DA:
+                    return "Intel NM10/ICH7 Family SMBus Controller";
+                    break;
                 
                 default:
                     return "Intel Device";
