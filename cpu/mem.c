@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <cpu/mem.h>
 #include <stdio.h>
+#include <config.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -9,11 +10,11 @@ static dynamic_mem_node_t *dynamic_mem_start;
 
 void init_dmem()
 {
-    printf("DMEM: Initiliazing...\n");
     dynamic_mem_start = (dynamic_mem_node_t *) dynamic_mem_area;
     dynamic_mem_start->size = DYNAMIC_MEM_TOTAL_SIZE - DYNAMIC_MEM_NODE_SIZE;
     dynamic_mem_start->next = NULL_POINTER;
     dynamic_mem_start->prev = NULL_POINTER;
+    INFO("dmem v.0.9");
     // kprint("dmem: dynamic memory managment total size: ");
     // kprintci(((int)dynamic_mem_start->size / 1024) / 1024, 0x03);
     // kprint(" mbytes\n");

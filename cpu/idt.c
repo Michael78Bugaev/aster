@@ -2,6 +2,8 @@
 #include <io/iotools.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <vga.h>
+#include <config.h>
 
 struct idt_entry_struct idt_entries[256];
 struct idt_ptr_struct idt_ptr;
@@ -10,7 +12,7 @@ extern void idt_flush(uint32_t);
 
 void init_idt()
 {
-    printf("IDT: Initiliazing...\n");
+    INFO("installing idt for 0 and 1");
     idt_ptr.limit = sizeof(struct idt_entry_struct) * 256 - 1;
     idt_ptr.base = (uint32_t) &idt_entries;
     memset(&idt_entries, 0, sizeof(struct idt_entry_struct) * 256);
@@ -101,21 +103,21 @@ char *get_ex(int num)
     switch (num)
     {
         case 0:
-            return "Division by zero";
+            return "KERNEL_DIVISION";
         case 1:
-            return "Debug";
+            return "KERNEL_DEBUG_FAULT";
         case 2:
-            return "Non-maskable interrupt";
+            return "NON_MASKABLE_INTERRUPT";
         case 3:
-            return "Breakpoint";
+            return "KERNEL_BREAKPOINT";
         case 4:
-            return "Overflow";
+            return "STACK_OVERFLOW";
         case 5:
-            return "Bound range exceeded";
+            return "BOUND_RANGE";
         case 6:
-            return "Invalid opcode";
+            return "KERNEL_INVALID_OPCODE";
         case 7:
-            return "Device not available";
+            return "DEV_NOT_AVALIABLE";
         case 8:
             return "Double fault";
         case 9:
@@ -125,11 +127,11 @@ char *get_ex(int num)
         case 11:
             return "Segment not present";
         case 12:
-            return "Stack fault";
+            return "STACK_FAULT";
         case 13:
-            return "General protection fault";
+            return "GENERAL_PROTECTION_FAULT";
         case 14:
-            return "Page fault";
+            return "PAGE_FAULT";
         case 15:
             return "Unknown interrupt";
         case 16:
@@ -169,9 +171,35 @@ char *get_ex(int num)
 
 void isr_handler(struct InterruptRegisters* resgs)
 {
+    /*
+    uint32_t ds;
+    uint32_t eflags, useresp, ss;*/
     if (resgs->int_no < 32)
     {
-        printf("<(0c)>--< Kernel panic >--|--< %s >--", get_ex(resgs->int_no));
+        //printf("<(0f)>--< Kernel panic >--|--< %s >--", get_ex(resgs->int_no));
+        uint16_t	offset = 0;
+        while (offset < (MAX_ROWS * MAX_COLS * 2))
+        {
+            write('\0', 0x10, offset);
+            offset += 2;
+        }
+        set_cursor(0);
+        printf("<(1f)>\nAn unexpected error occured during running kernel!\n\n"
+
+                     "If you see this message, reboot computer, or contact with kernel developers."
+                   "\nEAX: 0x%x EBX: 0x%x ECX: 0x%x\n"
+                     "CR2: 0x%x EDI: 0x%x ESI: 0x%x\n"
+                     "EDX: 0x%x CSM: 0x%x SS: 0x%x\n"
+                     "ESP: 0x%x EBP: 0x%x EIP: 0x%x\n"
+                     "DS: 0x%x\n\n"
+                 
+                      "%s", resgs->eax, resgs->ebx, resgs->ecx, 
+                      resgs->cr2, resgs->edi, resgs->esi,
+                      resgs->edx, resgs->csm, resgs->ss,
+                            resgs->esp, resgs->ebp, resgs->eip, resgs->ds,
+
+                            get_ex(resgs->int_no));
+        disable_cursor();
         for(;;);
     }
 }

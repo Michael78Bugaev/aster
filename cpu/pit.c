@@ -4,6 +4,7 @@
 #include <io/idt.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <config.h>
 #include <stdint.h>
 
 uint64_t ticks;
@@ -20,16 +21,16 @@ void inwait(struct InterruptRegisters *regs);
 
 void init_pit()
 {
-    printf("PIT: Initiliazing...\n");
+    INFO("installing irq 0 for timer");
     ticks = 0;
     target = 0;
-    irq_install_handler(0, &pit_handler);
-
+    //irq_install_handler(0, &pit_handler);
     uint32_t div = 1193180 / freq;
 
     port_byte_out(0x43, 0x36);
     port_byte_out(0x40, (uint8_t)div & 0xFF);
     port_byte_out(0x40, (uint8_t)((div >> 8) & 0xFF));
+
 }
 void pit_handler(struct InterruptRegisters *regs)
 {

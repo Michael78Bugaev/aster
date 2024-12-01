@@ -1,12 +1,16 @@
 #include <fs/initrd.h>
 #include <stdio.h>
 #include <cpu/mem.h>
+#include <config.h>
+#include <drv/usb.h>
 #include <string.h>
+#include <drv/pci.h>
 #include <stdlib.h>
 
 Directory* fscreate_directory(const char *name, Directory *parent);
 
 void init_vfs() {
+    DEBUG("currently running shfs v.0.06 (initfs)");
     root = (Directory *)malloc(sizeof(Directory));
     strncpy(root->name, "/", MAX_FILENAME_LENGTH);
     root->parent = NULL;
@@ -18,6 +22,39 @@ void init_vfs() {
     devfs = create_directory("/dev");
     userfs = create_directory("/user");
     sysfs = create_directory("/sys");
+
+    // for (int i = 0; i < pci_device_count; i++) {
+    //     char device_name[32];
+    //     // Формируем уникальное имя устройства в формате dev_XXXX
+    //     strcpy(device_name, "/dev/dev_");
+    //     itoa(pci_devices[i].device_id, device_name + strlen(device_name), 16); // Добавляем Device ID в шестнадцатеричном формате
+    //     //printf("[INFO]: pci device prototype in /dev: %s\n", device_name);
+
+    //     // Создаем двоичные данные для записи в файл
+    //     uint32_t binary_data[4]; // Массив для хранения данных
+    //     binary_data[0] = pci_devices[i].vendor_id; // Vendor ID
+    //     //printf("%x ", binary_data[0]);
+    //     binary_data[1] = pci_devices[i].device_id; // Device ID
+    //     //printf("%x ", binary_data[1]);
+    //     binary_data[2] = pci_devices[i].class_code; // Class Code
+    //     //printf("%x ", binary_data[2]);
+    //     binary_data[3] = pci_devices[i].subclass_code; // Subclass Code
+    //     //printf("%x\n", binary_data[3]);
+
+    //     // Создаем файл устройства с уникальным именем и двоичными данными
+    //     new_file(device_name, (uint8_t *)binary_data, sizeof(binary_data)); // Записываем двоичные данные
+
+    // }
+
+    // for (uint8_t i = 0; i < usb_device_count; i++) {
+    //     usb_device_t *dev = get_usb_device(i);
+    //     if (dev) {
+    //         char device_name[32];
+    //         strncpy(device_name, "/dev/usb%d", i);
+    //         new_file(device_name, NULL, 0); // Создаем файл устройства
+    //         //printf("[INFO]: usb device prototype in %s\n", device_name);
+    //     }
+    // }
 
     uint8_t *data = "lalalaaaa\nalalaaaa";
 
@@ -36,8 +73,8 @@ void init_vfs() {
     File *rmrf_bin = new_file("/exec/rmrf.bin", NULL, NULL);
     File *chmod_bin = new_file("/exec/chmod.bin", NULL, NULL);
     File *chown_bin = new_file("/exec/chown.bin", NULL, NULL);
-    File *chgrp_bin = new_file("/exec/chgrp.bin", data, sizeof(data));
-    File *ln_bin = new_file("/exec/ln.bin", NULL, NULL);
+    File *chgrp_bin = new_file("/exec/chgrp.bin", NULL, NULL);
+    File *ln_bin = new_file("/exec/ln.bin", data, sizeof(data));
 }
 
 Directory* get_root_directory() {

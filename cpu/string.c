@@ -455,3 +455,38 @@ void remove_null_chars(char *str) {
     }
     *dst = '\0'; // Завершаем результирующую строку нулевым символом
 }
+
+void itoa(int value, char* str, int base) {
+    int i = 0;
+    int is_negative = 0;
+
+    // Handle 0 explicitly
+    if (value == 0) {
+        str[i++] = '0';
+        str[i] = '\0';
+        return;
+    }
+
+    // Handle negative numbers
+    if (value < 0 && base == 10) {
+        is_negative = 1;
+        value = -value;
+    }
+
+    // Process each digit
+    while (value != 0) {
+        int rem = value % base;
+        str[i++] = (rem > 9) ? (rem - 10) + 'A' : rem + '0'; // Convert to character
+        value = value / base;
+    }
+
+    // If number is negative, append '-'
+    if (is_negative) {
+        str[i++] = '-';
+    }
+
+    str[i] = '\0';
+
+    // Reverse the string
+    reverse(str);
+}

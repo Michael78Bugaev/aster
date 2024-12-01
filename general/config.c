@@ -3,6 +3,7 @@
 #include <fs/file.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 #include <sash.h>
 #include <vga.h>
 #include <cpu/mem.h>
@@ -79,5 +80,14 @@ void start_global_config()
 }
 
 void execute_init(const char *filename) {
-    
+    INFO("executing /init as a main script");
+}
+
+void DEBUG(uint8_t *msg)
+{
+    printf("[DEBUG]: %s\n", msg);
+}
+void INFO(uint8_t *msg)
+{
+    printf("[INFO]: %s\n", msg);
 }

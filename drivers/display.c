@@ -168,8 +168,8 @@ void set_cursor_xy(uint8_t x, uint8_t y) {
 
 void disable_cursor()
 {
-	// port_byte_out(REG_SCREEN_CTRL, 0x0A);
-	// port_byte_out(REG_SCREEN_DATA, 0x20);
+	port_byte_out(REG_SCREEN_CTRL, 0x0A);
+	port_byte_out(REG_SCREEN_DATA, 0x20);
 }
 void kprint_hex(uint32_t value) {
 

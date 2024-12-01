@@ -46,7 +46,7 @@ void change_directory(const char *path) {
         if (new_dir) {
             target_directory = new_dir; // Переход в подкаталог
         } else {
-            printf("Directory not found: %s\n", components[i]);
+            printf("%s: No such directory or this is a file\n", components[i]);
             return;
         }
     }

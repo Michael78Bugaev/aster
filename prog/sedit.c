@@ -1,99 +1,119 @@
 #include <sedit.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include <cpu/mem.h>
-#include <fs/initrd.h>
 #include <fs/file.h>
-#include <fs/dir.h>
-#include <io/kb.h>
-#include <io/iotools.h>
+#include <fs/initrd.h>
+#include <io/kb.h> // Для работы с клавиатурой
 
-static struct Key key;
+bool enter = false;
+void keyboard_handler(struct InterruptRegisters *regs);
 
-static EditorBuffer editor_buffer;
-
-void init_editor(EditorBuffer *buffer) {
-    buffer->line_count = 0;
-    buffer->input_index = 0; // Инициализация индекса ввода
-    for (int i = 0; i < MAX_LINES; i++) {
-        buffer->lines[i] = (char *)malloc(MAX_LINE_LENGTH);
-    }
-
-    // Устанавливаем обработчик для клавиатуры
-    irq_install_handler(1, keyboard_irq_handler); // IRQ 1 - клавиатура
+void init_editor(EditorBuffer *editor_buffer) {
+    memset(editor_buffer->buffer, 0, MAX_BUFFER_SIZE);
+    editor_buffer->cursor_position = 0;
+    editor_buffer->length = 0;
 }
 
-void load_file(EditorBuffer *buffer, const char *filename) {
-    File *file = find_file(filename, current_directory);
+void load_file(EditorBuffer *editor_buffer, const char *filename) {
+    File *file = read_file(filename, current_directory);
     if (file) {
-        buffer->line_count = 0;
-        char *data = (char *)file->data;
-        char *line = strtok(data, "\n");
-        while (line != NULL && buffer->line_count < MAX_LINES) {
-            strncpy(buffer->lines[buffer->line_count++], line, MAX_LINE_LENGTH);
-            line = strtok(NULL, "\n");
-        }
+        strncpy(editor_buffer->buffer, (char *)file->data, MAX_BUFFER_SIZE);
+        editor_buffer->length = strlen(editor_buffer->buffer);
+        editor_buffer->cursor_position = editor_buffer->length; // Устанавливаем курсор в конец
     } else {
-        printf("File not found: %s\n", filename);
+        printf("Error: Could not load file %s\n", filename);
     }
 }
 
-void save_file(EditorBuffer *buffer, const char *filename) {
-    char *data = (char *)malloc(MAX_LINES * MAX_LINE_LENGTH);
-    data[0] = '\0'; // Обнуляем строку
-
-    for (int i = 0; i < buffer->line_count; i++) {
-        strcat(data, buffer->lines[i]);
-        strcat(data, "\n");
+void save_file(EditorBuffer *editor_buffer, const char *filename) {
+    if (editor_buffer->length > 0) {
+        write_file(filename, (uint8_t *)editor_buffer->buffer, editor_buffer->length, current_directory);
+    } else {
+        printf("Error: Buffer is empty, nothing to save.\n");
     }
-
-    create_file(filename, (uint8_t *)data, strlen(data), current_directory);
-    mfree(data);
-    printf("File saved: %s\n", filename);
 }
 
-void display_editor(EditorBuffer *buffer) {
-    printf("\n--- Text Editor ---\n");
-    for (int i = 0; i < buffer->line_count; i++) {
-        printf("%d: %s\n", i + 1, buffer->lines[i]);
-    }
-    printf("-------------------\n");
-    printf("Input: %s", buffer->input_buffer); // Отображаем текущий ввод
+void display_editor(EditorBuffer *editor_buffer) {
+    clear_screen();
+    printf("Editor - Press Ctrl+S to save, Ctrl+Q to quit\n");
+    printf("%s\n", editor_buffer->buffer);
+    // Отображаем курсор
+    set_cursor(editor_buffer->cursor_position);
 }
 
-void keyboard_irq_handler(struct InterruptRegisters *regs) {
-    key.scancode = port_byte_in(0x60) & 0x7F; // Получаем скан-код
-    key.press = port_byte_in(0x60) & 0x80;    // Получаем состояние нажатия
+void handle_input(EditorBuffer *editor_buffer) {
+    char scanCode;
+    char press;
 
-    // Обработка нажатия клавиш
-    if (!key.press) { // Если клавиша нажата
-        if (key.scancode == 0x1C) { // Enter
-            if (editor_buffer.input_index > 0) {
-                editor_buffer.input_buffer[editor_buffer.input_index] = '\0'; // Завершаем строку
-                if (strcmp(editor_buffer.input_buffer, "SAVE") == 0) {
-                    char filename[MAX_LINE_LENGTH];
-                    printf("\nEnter filename to save: ");
-                    // Здесь можно использовать метод для получения имени файла
-                } else if (strcmp(editor_buffer.input_buffer, "EXIT") == 0) {
-                    // Здесь можно добавить логику для выхода из редактора
-                    printf("\nExiting editor...\n");
-                    return;
-                } else {
-                    if (editor_buffer.line_count < MAX_LINES) {
-                        strncpy(editor_buffer.lines[editor_buffer.line_count++], editor_buffer.input_buffer, MAX_LINE_LENGTH);
-                    }
+    while (1) {
+        // Устанавливаем обработчик прерываний для клавиатуры
+        irq_install_handler(1, &keyboard_handler); // keyboard_handler - ваш обработчик клавиатуры
+
+        // Ждем, пока не будет нажата клавиша
+        while (!enter) {
+            // Ожидание нажатия клавиши
+        }
+
+        // Получаем код нажатой клавиши
+        scanCode = port_byte_in(0x60) & 0x7F; // Получаем код нажатой клавиши
+        press = port_byte_in(0x60) & 0x80; // Проверяем, была ли клавиша нажата или отпущена
+
+        if (press == 0) { // Если клавиша нажата
+            if (scanCode == 0x1C) { // Enter
+                editor_buffer->buffer[editor_buffer->length] = '\n'; // Добавляем новую строку
+                editor_buffer->length++;
+                editor_buffer->cursor_position++;
+            } else if (scanCode == 0x0E) { // Backspace
+                if (editor_buffer->length > 0) {
+                    editor_buffer->length--;
+                    editor_buffer->cursor_position--;
+                    editor_buffer->buffer[editor_buffer->length] = '\0'; // Удаляем символ
                 }
-                display_editor(&editor_buffer);
-                editor_buffer.input_index = 0; // Сбрасываем индекс ввода
+            } else if (scanCode == 0x3B) { // Ctrl + S
+                save_file(editor_buffer, "output.txt"); // Сохраняем в файл
+            } else if (scanCode == 0x3A) { // Ctrl + Q
+                break; // Выход из редактора
+            } else {
+                // Добавляем символ в буфер
+                char character = get_acsii_low(scanCode); // Получаем символ из кода
+                if (editor_buffer->length < MAX_BUFFER_SIZE - 1) {
+                    editor_buffer->buffer[editor_buffer->length] = character; // Добавляем символ
+                    editor_buffer->length++;
+                    editor_buffer->cursor_position++;
+                }
             }
-        } else if (key.scancode >= 0x20 && key.scancode <= 0x7E) { // Проверяем, если это символ
-            if (editor_buffer.input_index < MAX_LINE_LENGTH - 1) {
-                editor_buffer.input_buffer[editor_buffer.input_index++] = key.scancode; // Добавляем символ в буфер ввода
-                editor_buffer.input_buffer[editor_buffer.input_index] = '\0'; // Обновляем строку
-                display_editor(&editor_buffer); // Обновляем отображение редактора
-            }
+        }
+
+        enter = false; // Сбрасываем флаг нажатия клавиши
+        display_editor(editor_buffer); // Обновляем отображение редактора
+    }
+}
+
+void free_editor_resources(EditorBuffer *editor_buffer) {
+    // Освобождение ресурсов, если необходимо
+}
+
+void keyboard_handler(struct InterruptRegisters *regs) {
+    char scanCode = port_byte_in(0x60) & 0x7F; // Получаем код нажатой клавиши
+    char press = port_byte_in(0x60) & 0x80; // Проверяем, была ли клавиша нажата или отпущена
+
+    if (press == 0) { // Если клавиша нажата
+        // Устанавливаем флаг нажатия клавиши
+        enter = true;
+
+        // Обработка специальных клавиш
+        if (scanCode == 0x1C) { // Enter
+            // Здесь можно добавить дополнительную логику, если нужно
+        } else if (scanCode == 0x0E) { // Backspace
+            // Здесь можно добавить дополнительную логику, если нужно
+        } else if (scanCode == 0x3B) { // Ctrl + S
+            // Здесь можно добавить дополнительную логику, если нужно
+        } else if (scanCode == 0x3A) { // Ctrl + Q
+            // Здесь можно добавить дополнительную логику, если нужно
+        } else {
+            // Обработка обычных символов
+            char character = get_acsii_low(scanCode); // Получаем символ из кода
+            // Здесь можно добавить дополнительную логику для обработки символов
         }
     }
 }

@@ -33,3 +33,4 @@ char tolower(char s1);
 int istrncmp(const char *str1, const char *str2, int n);
 char *strrchr(const char *str, int character);
 void remove_null_chars(char *str);
+void itoa(int value, char* str, int base);

@@ -1,5 +1,6 @@
 #include <chset/chipset.h>
 #include <io/iotools.h>
+#include <config.h>
 #include <stdio.h>
 #include <cpu/pit.h>
 
@@ -8,7 +9,7 @@ void init_chipset() {
     // Настройка базовых регистров чипсета
     port_byte_out(CHIPS_BASE_ADDRESS + CHIPS_CONFIG_REGISTER, 0x01); // Пример настройки
     port_byte_out(CHIPS_BASE_ADDRESS + CHIPS_STATUS_REGISTER, 0x00); // Сброс статуса
-    printf("\nUniversal chipset driver UCD v.1.0.0\nInfo: Chipset initialized successfully.\n\n");
+    INFO("chipset detected (universal chipset driver)");
 }
 
 // Обработчик прерываний

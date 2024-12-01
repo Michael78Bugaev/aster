@@ -95,6 +95,14 @@ void printf(const char* format, ...) {
         }
 
         c = *format++;
+        int width = 0; // Инициализируем ширину
+
+        // Обработка ширины
+        while (c >= '0' && c <= '9') {
+            width = width * 10 + (c - '0'); // Собираем число
+            c = *format++; // Переходим к следующему символу
+        }
+
         switch (c) {
             case 'd':
                 int_arg = (int *)arg++;
@@ -115,8 +123,11 @@ void printf(const char* format, ...) {
             case 'x': {
                 int_arg = (int *)arg++;
                 hex_to_str(*int_arg, num_buf);
-                putchar('0', current_color);
-                putchar('x', current_color);
+                int len = strlen(num_buf);
+                // Добавляем пробелы для выравнивания
+                for (int i = 0; i < width - len; i++) {
+                    putchar('0', current_color); // Заполняем нулями
+                }
                 for (char *ptr = num_buf; *ptr; ptr++) {
                     putchar(*ptr, current_color);
                 }
@@ -126,8 +137,11 @@ void printf(const char* format, ...) {
             case 'X': {
                 int_arg = (int *)arg++;
                 hex_to_str(*int_arg, num_buf);
-                putchar('0', current_color);
-                putchar('X', current_color);
+                int len = strlen(num_buf);
+                // Добавляем пробелы для выравнивания
+                for (int i = 0; i < width - len; i++) {
+                    putchar('0', current_color); // Заполняем нулями
+                }
                 for (char *ptr = num_buf; *ptr; ptr++) {
                     putchar(*ptr, current_color);
                 }
@@ -136,31 +150,15 @@ void printf(const char* format, ...) {
 
             case 'c':
                 int_arg = (int *)arg++;
-                putchar((char)*int_arg, current_color);
+                putchar((char)(*int_arg), current_color);
                 break;
 
             case 's':
-                str_arg = *arg++;
-                if (str_arg) while (*str_arg) {
+                str_arg = *(char **)arg++;
+                while (*str_arg) {
                     putchar(*str_arg++, current_color);
                 }
                 break;
-
-            case '-': {
-                c = *format++;
-                if (c == 'x') {
-                    int_arg = (int *)arg++;
-                    hex_to_str(*int_arg, num_buf);
-                    int len = strlen(num_buf);
-                    for (int i = 0; i < 15 - len; i++) {
-                        putchar(' ', current_color);
-                    }
-                    for (char *ptr = num_buf; *ptr; ptr++) {
-                        putchar(*ptr, current_color);
-                    }
-                }
-                break;
-            }
 
             default:
                 putchar(c, current_color);

@@ -38,12 +38,21 @@ void execute_sash(char *arg)
             else
             {
                 printf("Aster Operating System Shell commands:\n");
-                printf("  &help:     Displays this help message\n");
-                printf("  &clear:    Clear the screen\n");
-                printf("  &tick:     Get current tick count\n");
-                printf("  &identify: Identify disks (searching for one disk)\n            to initiliaze FAT32 on them\n");
-                printf("  &initfs:   Initiliaze FAT32 on the first disk\n");
-                printf("  &rainbow:  Show all 16 colors (for screen testing)\n");
+                printf("  &help:              Displays this help message\n");
+                printf("  &clear:             Clear the screen\n");
+                printf("  &tick:              Get current tick count\n");
+                printf("  &ls <dir>:          Get all entries in the current directory or the specified\n                      directory\n");
+                printf("  &mkdir <dir>:       Create a new directory\n");
+                printf("  &touch <file>:      Create a new empty file\n");
+                printf("  &cd <dir>:          Change the current directory\n");
+                printf("  &rm [-r -f] <file>: Delete a file or directory\n");
+                printf("  &cat <file>:        Display the contents of a file\n");
+                printf("  &edit <file>:       Edit a file\n");
+                printf("  &reboot:            Reboot the system now (for QEMU)\n");
+                printf("  &shutdown:          Shutdown the system now (for QEMU)\n");
+                printf("  &rainbow:           Show all 16 colors (for screen testing)\n");
+                printf("  &debug:             Run debug (MAY CRASH SYSTEM)\n");
+                printf("  &debug_end:         End debug mode\n");
 
             }
             return;
