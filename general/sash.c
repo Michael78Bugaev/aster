@@ -14,6 +14,7 @@
 
 bool init = false;
 int disk = 0;
+int disk = 0;
 
 void execute_ls(char *path);
 void execute_mkdir(char *name);
@@ -94,12 +95,10 @@ void execute_sash(char *arg)
         else if (strcmp(args[0], "sectorout") == 0)
         {
             uint8_t buffer[512];
-            ata_read(disk, 0, 0, &buffer);
-            for (int i = 0; i < 512; i++) {
-                // Каждые 16 байт выводим адрес
+            ata_read(0, 0, 0, &buffer);
+            for (int i = 0; i < 16; i++) {
                 if (i % 16 == 0) {
-                    // Печатаем адрес
-                    printf("\n%04x: ", i);
+                    printf("\n");
                 }
                 // Печатаем байт в шестнадцатеричном формате
                 printf("%02x ", buffer[i]);
