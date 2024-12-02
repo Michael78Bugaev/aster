@@ -13,6 +13,7 @@
 #include <vga.h>
 
 bool init = false;
+int disk = 0;
 
 void execute_ls(char *path);
 void execute_mkdir(char *name);
@@ -70,22 +71,65 @@ void execute_sash(char *arg)
             }
             return;
         }
+        else if (strcmp(args[0], "format") == 0)
+        {
+            // Заполнение всего диска нулями
+            uint8_t buffer[512]; // Буфер для записи
+            memset(buffer, 0, sizeof(buffer)); // Заполняем буфер нулями
+
+            // Предполагаем, что диск имеет 1024 сектора (это нужно изменить в зависимости от реального размера диска)
+            for (uint32_t lba = 0; lba < 1024; lba++) {
+                ata_write(disk, lba, 1, buffer); // Записываем один сектор
+            }
+
+            printf("format: disk %d formatted successfully.\n", disk);
+        }
         else if (strcmp(args[0], "sectorin") == 0)
         {
-            uint8_t buffer[512] = "Hello Aster!";
-            ata_write(0, 0, 0, &buffer);
+            char buffer[512];
+            strcpy(buffer, args[1]);
+            ata_write(disk, 0, 0, &buffer);
+            return;
         }
         else if (strcmp(args[0], "sectorout") == 0)
         {
             uint8_t buffer[512];
-            ata_read(0, 0, 0, &buffer);
-            for (int i = 0; i < 16; i++) {
+            ata_read(disk, 0, 0, &buffer);
+            for (int i = 0; i < 512; i++) {
+                // Каждые 16 байт выводим адрес
                 if (i % 16 == 0) {
-                    printf("\n");
+                    // Печатаем адрес
+                    printf("\n%04x: ", i);
                 }
-                printf("%c", buffer[i]);
+                // Печатаем байт в шестнадцатеричном формате
+                printf("%02x ", buffer[i]);
             }
-            printf("\n");
+
+            // Печатаем текстовое представление
+            printf(" ");
+            for (int i = 0; i < 512; i++) {
+                // Если байт является печатным символом, выводим его, иначе выводим точку
+                if (buffer[i] >= 32 && buffer[i] <= 126) {
+                    printf("%c", buffer[i]);
+                } else {
+                    printf(".");
+                }
+            }
+            printf("\n");                     /**/
+            return;
+        }
+        else if (strcmp(args[0], "disk") == 0)
+        {
+            if (count == 2)
+            {
+                int disk_to = atoi(args[1]);
+                disk = disk_to;
+            }
+            if (count == 1)  
+            {
+                printf("disk: %d\n", disk);
+            }
+            return;
         }
         else if (strcmp(args[0], "ls") == 0)
         {

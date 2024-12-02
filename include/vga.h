@@ -13,7 +13,7 @@
 
 #define VIDEO_ADDRESS 0xb8000	// Адрес начала VGA для печати символов
 #define MAX_ROWS 25				// макс. строк
-#define MAX_COLS 80				// макс. столбцов
+#define MAX_COLS 80			// макс. столбцов
 
 #define WHITE_ON_BLACK 0x07		// 0x0 == white fg, 0xf == black bg
 
