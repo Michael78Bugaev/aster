@@ -12,10 +12,10 @@ void ata_init() {
     ata_devices[1].base = ATA_SECONDARY;
 
     // Проверка наличия устройств
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 2; i++) { // Изменено с 16 на 2
         port_byte_out(ata_devices[i].base + ATA_DEV_REG, 0);
-        if (port_byte_in(ata_devices[i].base + ATA_STATUS_REG) != 0xFF) {
-            printf("[INFO]: ATA device found on channel %d\n", i);
+        if ((port_byte_in(ata_devices[i].base + ATA_STATUS_REG) != 0xFF)) {
+            printf("[INFO]: SATA device found on channel %d\n", i);
         }
     }
 }
@@ -29,7 +29,10 @@ void ata_read(uint8_t drive, uint32_t lba, uint8_t sector_count, void *buffer) {
     port_byte_out(ata_devices[drive].base + ATA_CMD_READ, ATA_CMD_READ);
 
     // Ожидание завершения операции
-    while (!(port_byte_in(ata_devices[drive].base + ATA_STATUS_REG) & 0x08));
+    while (!(port_byte_in(ata_devices[drive].base + ATA_STATUS_REG) & 0x08))
+    {
+    
+    }
 
     // Чтение данных
     for (int i = 0; i < sector_count * 256; i++) {

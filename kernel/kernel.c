@@ -36,30 +36,30 @@ void kentr(uint32_t magic, struct multiboot_info* boot_info) {
     uint8_t write_buffer[512];
 
     // Заполнение буфера данными для записи
-    for (int i = 0; i < 512; i++) {
-        write_buffer[i] = (uint8_t)i; // Пример данных: последовательные числа
-    }
+    // for (int i = 0; i < 512; i++) {
+    //     write_buffer[i] = (uint8_t)i; // Пример данных: последовательные числа
+    // }
 
-    // Чтение данных с первого диска (drive 0) из сектора 0
-    ata_read(0, 0, 0, read_buffer);
-    printf("Data read from drive 0, sector 0:\n");
+    // // Чтение данных с первого диска (drive 0) из сектора 0
+    // ata_read(0, 0, 0, read_buffer);
+    // printf("Data read from drive 0, sector 0:\n");
 
-    // Вывод прочитанных данных
-    for (int i = 0; i < 16; i++) {
-        if (i % 16 == 0) {
-            printf("\n");
-        }
-        printf("%02X ", read_buffer[i]);
-    }
-    printf("\n");
+    // // Вывод прочитанных данных
+    // for (int i = 0; i < 16; i++) {
+    //     if (i % 16 == 0) {
+    //         printf("\n");
+    //     }
+    //     printf("%02X ", read_buffer[i]);
+    // }
+    // printf("\n");
 
-    for (int i = 0; i < 16; i++) {
-        if (i % 16 == 0) {
-            printf("\n");
-        }
-        printf("%c", read_buffer[i]);
-    }
-    printf("\n");
+    // for (int i = 0; i < 16; i++) {
+    //     if (i % 16 == 0) {
+    //         printf("\n");
+    //     }
+    //     printf("%c", read_buffer[i]);
+    // }
+    // printf("\n");
 
     init_vfs();
     printf("\n");
