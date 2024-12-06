@@ -427,6 +427,7 @@ uint8_t ide_ata_access(uint8_t direction, uint8_t drive, uint32_t lba, uint8_t n
     ide_write_register(channel, ATA_REG_COMMAND, cmd);  // Send the Command.
 
     if (dma) {
+        printf("dma true\n");
         if (direction == ATA_READ) {
             // DMA Read
         } else {
@@ -477,7 +478,7 @@ void ide_irq() {
 int ide_read_sectors(uint8_t drive, uint8_t num_sectors, uint32_t lba, uint32_t buffer) {
     // 1: Check if the drive presents:
     if (drive > MAXIMUM_IDE_DEVICES || g_ide_devices[drive].reserved == 0) {
-        printf("\n[ERR]: drive %u not found\n", drive);
+        // printf("\n[ERR]: drive %u not found\n", drive);
         return -1;
     }
     // 2: Check if inputs are valid:

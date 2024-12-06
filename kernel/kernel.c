@@ -32,7 +32,7 @@ void kentr(uint32_t magic, struct multiboot_info* boot_info) {
     // sata_init();
     // sata_init_all_disks();
     ata_init();
-    fat_init();
+    //fat_init();
 
     //uint8_t buffer[512];
     // sata_read_sector(0, buffer);
