@@ -1,6 +1,6 @@
 # Aster
 
-![](https://github.com/Michael78Bugaev/aster/blob/main/aster)
+![](https://github.com/Michael78Bugaev/aster/blob/main/aster.png)
 
 The new 32-bit kernel using **GRUB**.
 
