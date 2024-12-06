@@ -155,7 +155,7 @@ char *get_ex(int num)
         case 25:
             return "Security Exception";
         case 26:
-            return "\" - It Is RE-SE-RVED! - \"";
+            return "\" -  - \"";
         case 27:
             return "Triple fault";
         case 28:

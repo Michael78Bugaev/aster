@@ -258,6 +258,6 @@ void fat_init(){
 	g_DataSectionLBA = g_fat_bpb->reserved_sector_count + g_fat_bpb->table_size_32 * g_fat_bpb->table_count;
 	root_dir_lba = FAT_ClusterToLba(g_fat_bpb->root_cluster);
 	ide_read_sectors(1, 0, root_dir_lba, g_root_buf);
-	char* file_buf = fat_read_file("/test/subdir/hello.txt");
-	printf("\nFile buf: %s\n", file_buf);
+	// char* file_buf = fat_read_file("/test/subdir/hello.txt");
+	// printf("\nFile buf: %s\n", file_buf);
 }
