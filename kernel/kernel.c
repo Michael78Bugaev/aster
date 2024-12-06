@@ -29,37 +29,27 @@ void kentr(uint32_t magic, struct multiboot_info* boot_info) {
 
     init_chipset();
     pci_init();
+    // sata_init();
+    // sata_init_all_disks();
     ata_init();
+    fat_init();
 
-    // Пример буфера для чтения и записи
-    uint8_t read_buffer[512];
-    uint8_t write_buffer[512];
-
-    // Заполнение буфера данными для записи
-    // for (int i = 0; i < 512; i++) {
-    //     write_buffer[i] = (uint8_t)i; // Пример данных: последовательные числа
-    // }
-
-    // // Чтение данных с первого диска (drive 0) из сектора 0
-    // ata_read(0, 0, 0, read_buffer);
-    // printf("Data read from drive 0, sector 0:\n");
-
-    // // Вывод прочитанных данных
-    // for (int i = 0; i < 16; i++) {
-    //     if (i % 16 == 0) {
+    //uint8_t buffer[512];
+    // sata_read_sector(0, buffer);
+    //ataWrite(PRIMARY_SLAVE, 1, 1, "H e l l o ,   a s t e r ! ");
+    // ide_write_sectors(0, 1, 1, 0xDEAD);
+    // ide_read_sectors(0, 1, 1, buffer);
+    // // Печатаем текстовое представление
+    // printf(" ");
+    // for (int i = 0; i < 256; i++) {
+    //     if (i % 16 == 0)
+    //     {
     //         printf("\n");
     //     }
-    //     printf("%02X ", read_buffer[i]);
+    //     // Если байт является печатным символом, выводим его, иначе выводим точку
+    //     printf("%2x ", buffer[i]);
     // }
-    // printf("\n");
-
-    // for (int i = 0; i < 16; i++) {
-    //     if (i % 16 == 0) {
-    //         printf("\n");
-    //     }
-    //     printf("%c", read_buffer[i]);
-    // }
-    // printf("\n");
+    // printf("\n"); 
 
     init_vfs();
     printf("\n");
