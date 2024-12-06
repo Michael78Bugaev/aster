@@ -19,3 +19,4 @@ void *malloc(size_t size);
 void mfree(void *p);
 void *merge_next_node_into_current(dynamic_mem_node_t *current_mem_node);
 void *merge_current_node_into_previous(dynamic_mem_node_t *current_mem_node);
+void *kcalloc(int n, int size);

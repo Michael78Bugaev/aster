@@ -153,3 +153,11 @@ void* krealloc(void* ptr, size_t new_size)
 
     return new_ptr;
 }
+
+void *kcalloc(int n, int size) {
+    if (n < 0 || size < 0)
+        return NULL;
+    void *mem = malloc(n * size);
+    memset(mem, 0, n * size);
+    return mem;
+}
