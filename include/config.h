@@ -86,6 +86,7 @@ struct global_variable {
     } data; // данные переменной
 };
 
+int disk = 0;
 struct global_variable var[];
 
 struct global_variable* find_variable(const char *name);

@@ -5,6 +5,7 @@
 #include <cpu/mem.h>
 #include <cpu/pit.h>
 #include <multiboot.h>
+#include <fs/ext2.h>
 #include <fs/initrd.h>
 #include <drv/ata.h>
 #include <stdio.h>
@@ -32,7 +33,6 @@ void kentr(uint32_t magic, struct multiboot_info* boot_info) {
     // sata_init();
     // sata_init_all_disks();
     ata_init();
-    //fat_init();
 
     //uint8_t buffer[512];
     // sata_read_sector(0, buffer);

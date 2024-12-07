@@ -2,7 +2,7 @@ include make.cfg
 
 $(BUILD_DIR)/AstrKernel: $(BUILD_DIR)/boot.asmo $(BUILD_DIR)/idt.asmo $(BUILD_DIR)/gdt.asmo kernel.o
 	@echo "Linking..."
-	@$(LD) -m elf_i386 $(LDFLAGS) -o $@ $^ progress.o ata.o multiboot.o fat32.o dir.o usb.o sedit.o file.o initrd.o pci.o chipset.o cbreak.o config.o iotools.o stdio.o mem.o display.o gdt.o idt.o kb.o string.o pit.o sash.o
+	@$(LD) -m elf_i386 $(LDFLAGS) -o $@ $^ progress.o ata.o multiboot.o nfat.o fat32.o dir.o usb.o sedit.o file.o initrd.o pci.o chipset.o cbreak.o config.o iotools.o stdio.o mem.o display.o gdt.o idt.o kb.o string.o pit.o sash.o
 
 	@cp $(BUILD_DIR)/AstrKernel $(BUILD_DIR)/iso/boot/AstrKernel
 	@grub-mkrescue -o aster_32-bit.iso $(BUILD_DIR)/iso

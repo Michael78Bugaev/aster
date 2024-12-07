@@ -5,6 +5,7 @@
 #include <fs/initrd.h>
 #include <sedit.h>
 #include <drv/ata.h>
+#include <fs/ext2.h>
 #include <fs/dir.h>
 #include <stdio.h>
 #include <cpu/mem.h>
@@ -13,7 +14,6 @@
 #include <vga.h>
 
 bool init = false;
-int disk = 0;
 
 void execute_ls(char *path);
 void execute_mkdir(char *name);
@@ -81,6 +81,7 @@ void execute_sash(char *arg)
                 ide_write_sectors(disk, 1 + lba, lba, buffer); // Записываем один сектор
             }
             printf("format: disk %d formatted successfully.\n", disk);
+            return;
         }
         else if (strcmp(args[0], "sectorin") == 0)
         {
@@ -89,6 +90,11 @@ void execute_sash(char *arg)
             ide_write_sectors(disk, 1, 0, buffer);
             return;
         }
+        // else if (strcmp(args[0], "ext2") == 0)
+        // {
+        //     ext2_create_file(disk, "testing.txt", "if you see this the ext2 driver works!");
+        //     return;
+        // }
         else if (strcmp(args[0], "sectorout") == 0)
         {
             uint8_t buffer[512];
@@ -110,6 +116,11 @@ void execute_sash(char *arg)
             printf("\n");                     /**/
             return;
         }
+        // else if (strcmp(args[0], "mount") == 0)
+        // {
+        //     mount_ext2(disk);
+        //     return;
+        // }
         else if (strcmp(args[0], "disk") == 0)
         {
             if (count == 2)
