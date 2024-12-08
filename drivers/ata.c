@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <io/iotools.h>
 #include <string.h>
+#include <fs/initrd.h>
 #include <config.h>
 
 // https://wiki.osdev.org/PCI_IDE_Controller
@@ -207,7 +208,7 @@ uint8_t ide_print_error(uint32_t drive, uint8_t err) {
         printf("Write Protected\n");
         err = 8;
     }
-    printf("[INFO]: [%s %s] %s\n",
+    printf("<(0f)>[INFO]:<(07)> [%s %s] %s\n",
            (const char *[]){"Primary", "Secondary"}[g_ide_devices[drive].channel],
            (const char *[]){"Master", "Slave"}[g_ide_devices[drive].drive],
            g_ide_devices[drive].model);
@@ -323,10 +324,17 @@ void ide_init(uint32_t prim_channel_base_addr, uint32_t prim_channel_control_bas
             count++;
         }
     }
-
+    int sum = 0;
+    bool ata = false;
+    bool atapi = false;
     // 4- Print Summary:
     for (i = 0; i < 4; i++)
         if (g_ide_devices[i].reserved == 1) {
+            if (sum == 0);
+            else sum++;
+            uint8_t *name;
+            uint8_t *numata;
+            uint8_t *buff;
             // printf("%d:-\n", i);
             // printf("  model: %s\n", g_ide_devices[i].model);
             // printf("  type: %s\n", (const char *[]){"ATA", "ATAPI"}[g_ide_devices[i].type]);
@@ -334,7 +342,18 @@ void ide_init(uint32_t prim_channel_base_addr, uint32_t prim_channel_control_bas
             // printf("  base: 0x%x, control: 0x%x\n", g_ide_channels[i].base, g_ide_channels[i].control);
             // printf("  size: %u sectors, %u bytes\n", g_ide_devices[i].size, g_ide_devices[i].size * ATA_SECTOR_SIZE);
             // printf("  signature: 0x%x, features: %d\n", g_ide_devices[i].signature, g_ide_devices[i].features);
-			printf("[INFO]: %s on drive %d, type %s, %u sectors\n", g_ide_devices[i].model, i, (const char *[]){"ATA", "ATAPI"}[g_ide_devices[i].type], g_ide_devices[i].size);
+			printf("<(0f)>[INFO]:<(07)> %s on drive %d, type %s, %u sectors\n", g_ide_devices[i].model, i, (const char *[]){"ATA", "ATAPI"}[g_ide_devices[i].type], g_ide_devices[i].size);
+            add_IDE_to_list(g_ide_devices[i]);
+            if (g_ide_devices[i].type == 0) // This is the ATA device
+            {
+                ide_read_sectors(sum, 1024, 0, buff);
+                File *disk = new_file("/dev/ata", buff, sizeof(buff));
+            }
+            else
+            {
+                ide_read_sectors(sum, 1024, 0, buff);
+                File *disk = new_file("/dev/atapi", buff, sizeof(buff));
+            }
         }
 }
 

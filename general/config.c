@@ -9,6 +9,7 @@
 #include <cpu/mem.h>
 
 uint64_t var_count = 0;
+int _current_ata_num = 0;
 
 struct global_variable* find_variable(const char *name) {
     for (int i = 0; i < VAR_MAXCOUNT; i++) {
@@ -89,5 +90,23 @@ void DEBUG(uint8_t *msg)
 }
 void INFO(uint8_t *msg)
 {
-    printf("[INFO]: %s\n", msg);
+    printf("<(0f)>[INFO]:<(07)> %s\n", msg);
+}
+
+int add_IDE_to_list(IDE_DEVICE device)
+{
+    if (_current_ata_num == 2)
+    {
+        return NULL;
+    }
+    else
+    {
+        _global_ata_devices[_current_ata_num + 1] = device;
+        _current_ata_num++;
+    }
+}
+
+struct _global_ata_devices *list_ide()
+{
+    return _global_ata_devices;
 }

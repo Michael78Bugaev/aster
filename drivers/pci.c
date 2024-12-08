@@ -10,6 +10,8 @@ pci_dev_t dev_zero= {0};
 bool devyes = false;
 
 void initialize_and_print_pci_devices();
+uint32_t get_device_class(pci_dev_t dev);
+uint32_t get_device_subclass(pci_dev_t dev);
 
 /*
  * Given a pci device(32-bit vars containing info about bus, device number, and function number), a field(what u want to read from the config space)
@@ -58,6 +60,15 @@ void pci_write(pci_dev_t dev, uint32_t field, uint32_t value) {
 uint32_t get_device_type(pci_dev_t dev) {
 	uint32_t t = pci_read(dev, PCI_CLASS) << 8;
 	return t | pci_read(dev, PCI_SUBCLASS);
+}
+
+uint32_t get_device_class(pci_dev_t dev)
+{
+    return pci_read(dev, PCI_CLASS);
+}
+uint32_t get_device_subclass(pci_dev_t dev)
+{
+    return pci_read(dev, PCI_SUBCLASS);
 }
 
 /*
@@ -462,11 +473,12 @@ void initialize_and_print_pci_devices() {
                 }
 
                 // Считываем class ID
-                class_id = get_device_type(dev); // Получаем тип устройства (class ID)
+                class_id = get_device_class(dev);
+                uint32_t subclass = get_device_subclass(dev);
                 const char* device_name = get_device_name(vendor_id, device_id);
 
                 // Вывод информации об устройстве
-                printf("[INFO]: %s [%4x:%4x] class: 0x%2x\n", device_name, vendor_id, device_id, class_id);
+                printf("<(0f)>[INFO]:<(07)> pci [%4x:%4x] class: 0x%2x subclass: 0x%2x\n", vendor_id, device_id, class_id, subclass);
             }
         }
     }

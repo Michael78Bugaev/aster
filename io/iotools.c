@@ -172,3 +172,20 @@ void outports(uint16_t _port, uint16_t _data) {
 void outportl(uint16_t _port, uint32_t _data) {
     asm volatile ("outl %%eax, %%dx" : : "dN" (_port), "a" (_data));
 }
+
+void int86(uint8_t int_num, regs_t *regs) {
+    // __asm__(
+    //     "mov %0, %%eax\n"
+    //     "mov %1, %%ebx\n"
+    //     "mov %2, %%ecx\n"
+    //     "mov %3, %%edx\n"
+    //     "mov %4, %%esi\n"
+    //     "mov %5, %%edi\n"
+    //     "mov %6, %%ebp\n"
+    //     "int $0x%11\n"
+    //     :
+    //     : "r" (regs->ax), "r" (regs->bx), "r" (regs->cx), "r" (regs->dx),
+    //       "r" (regs->si), "r" (regs->di), "r" (regs->bp), "N" (int_num)
+    //     : "eax", "ebx", "ecx", "edx", "esi", "edi", "ebp"
+    // );
+}

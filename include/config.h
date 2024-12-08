@@ -1,6 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 #include <stdint.h>
+#include <drv/ata.h>
 
 
 #define FAT16_MAX_FILESYSTEMS 10
@@ -86,7 +87,9 @@ struct global_variable {
     } data; // данные переменной
 };
 
+int disk = 0;
 struct global_variable var[];
+IDE_DEVICE _global_ata_devices[2];
 
 struct global_variable* find_variable(const char *name);
 void init_variable(const char *name, const char *value, int type);
@@ -96,5 +99,7 @@ void start_global_config();
 void execute_init(const char *filename);
 void DEBUG(uint8_t *msg);
 void INFO(uint8_t *msg);
+int add_IDE_to_list(IDE_DEVICE device);
+struct _global_ata_devices *list_ide();
 
 #endif

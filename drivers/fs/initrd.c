@@ -28,7 +28,7 @@ void init_vfs() {
     //     // Формируем уникальное имя устройства в формате dev_XXXX
     //     strcpy(device_name, "/dev/dev_");
     //     itoa(pci_devices[i].device_id, device_name + strlen(device_name), 16); // Добавляем Device ID в шестнадцатеричном формате
-    //     //printf("[INFO]: pci device prototype in /dev: %s\n", device_name);
+    //     //printf("<(0f)>[INFO]:<(07)> pci device prototype in /dev: %s\n", device_name);
 
     //     // Создаем двоичные данные для записи в файл
     //     uint32_t binary_data[4]; // Массив для хранения данных
@@ -52,7 +52,7 @@ void init_vfs() {
     //         char device_name[32];
     //         strncpy(device_name, "/dev/usb%d", i);
     //         new_file(device_name, NULL, 0); // Создаем файл устройства
-    //         //printf("[INFO]: usb device prototype in %s\n", device_name);
+    //         //printf("<(0f)>[INFO]:<(07)> usb device prototype in %s\n", device_name);
     //     }
     // }
 

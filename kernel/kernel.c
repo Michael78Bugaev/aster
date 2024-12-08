@@ -5,6 +5,7 @@
 #include <cpu/mem.h>
 #include <cpu/pit.h>
 #include <multiboot.h>
+#include <fs/ext2.h>
 #include <fs/initrd.h>
 #include <drv/ata.h>
 #include <stdio.h>
@@ -22,6 +23,8 @@ void kentr(uint32_t magic, struct multiboot_info* boot_info) {
     init_gdt();
     // Инициализация IDT
     init_idt();
+    printf("Magic: 0x%8x\n", magic);
+
     // Инициализация PIT
     init_pit();
     // Инициализация памяти
@@ -31,6 +34,7 @@ void kentr(uint32_t magic, struct multiboot_info* boot_info) {
     pci_init();
     // sata_init();
     // sata_init_all_disks();
+    init_video_driver();
     ata_init();
     //fat_init();
 

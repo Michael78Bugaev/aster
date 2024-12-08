@@ -44,7 +44,7 @@ void detect_usb_devices() {
                 strncpy(dev->device_name, temp_name, sizeof(dev->device_name) - 1);
                 dev->device_name[sizeof(dev->device_name) - 1] = '\0'; // Обеспечиваем нулевое завершение
 
-                printf("[INFO]: usb device dev_id 0x%x name: %s\n", device_id, temp_name);
+                printf("<(0f)>[INFO]:<(07)> usb device dev_id 0x%x name: %s\n", device_id, temp_name);
             }
         }
     }

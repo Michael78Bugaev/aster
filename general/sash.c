@@ -5,6 +5,7 @@
 #include <fs/initrd.h>
 #include <sedit.h>
 #include <drv/ata.h>
+#include <fs/ext2.h>
 #include <fs/dir.h>
 #include <stdio.h>
 #include <cpu/mem.h>
@@ -13,7 +14,6 @@
 #include <vga.h>
 
 bool init = false;
-int disk = 0;
 
 void execute_ls(char *path);
 void execute_mkdir(char *name);
@@ -68,58 +68,6 @@ void execute_sash(char *arg)
             else
             {
                 clear_screen();
-            }
-            return;
-        }
-        else if (strcmp(args[0], "format") == 0)
-        {
-            // Заполнение всего диска нулями
-            uint8_t buffer[512]; // Буфер для записи
-            memset(buffer, 0, sizeof(buffer)); // Заполняем буфер нуля
-            // Предполагаем, что диск имеет 1024 сектора (это нужно изменить в зависимости от реального размера диска)
-            for (uint32_t lba = 0; lba < 1024; lba++) {
-                ide_write_sectors(disk, 1 + lba, lba, buffer); // Записываем один сектор
-            }
-            printf("format: disk %d formatted successfully.\n", disk);
-        }
-        else if (strcmp(args[0], "sectorin") == 0)
-        {
-            char buffer[512];
-            strcpy(buffer, args[1]);
-            ide_write_sectors(disk, 1, 0, buffer);
-            return;
-        }
-        else if (strcmp(args[0], "sectorout") == 0)
-        {
-            uint8_t buffer[512];
-            ide_read_sectors(disk, 1, 0, buffer);
-            // Печатаем текстовое представление
-            printf(" ");
-            for (int i = 0; i < 1024; i++) {
-                if (i % 64 == 0)
-                {
-                    printf("\n");
-                }
-                // Если байт является печатным символом, выводим его, иначе выводим точку
-                if (buffer[i] >= 32 && buffer[i] <= 126) {
-                    printf("%c", buffer[i]);
-                } else {
-                    printf(".");
-                }
-            }
-            printf("\n");                     /**/
-            return;
-        }
-        else if (strcmp(args[0], "disk") == 0)
-        {
-            if (count == 2)
-            {
-                int disk_to = atoi(args[1]);
-                disk = disk_to;
-            }
-            if (count == 1)  
-            {
-                printf("disk: %d\n", disk);
             }
             return;
         }

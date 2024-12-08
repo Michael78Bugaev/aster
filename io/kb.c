@@ -17,7 +17,7 @@ char agent_input[512];
 bool capsOn = false;
 bool capsLock = false;
 bool enter = false;
-int barrier = 2;
+int barrier;
 uint8_t shell_history[MAX_COMMAND_LENGTH][MAX_HISTORY];
 int history_index = 0;
 int cursor_index = 0;
@@ -47,8 +47,9 @@ void set_barrier(int n)
 
 void handler(struct InterruptRegisters *regs)
 {
-      char scanCode = port_byte_in(0x60) & 0x7F;
-	  char press = port_byte_in(0x60) & 0x80;
+	set_barrier(strlen(current_directory->name) + 2);
+    char scanCode = port_byte_in(0x60) & 0x7F;
+	char press = port_byte_in(0x60) & 0x80;
     //kprint(lowercase[0x22]);
 
     switch (scanCode)
