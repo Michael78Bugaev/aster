@@ -1,3 +1,6 @@
+#ifndef MULTIBOOT_H
+#define MULTIBOOT_H
+
 #include <stdint.h>
 
 struct multiboot_aout_symbol_table
@@ -70,3 +73,5 @@ struct multiboot_mmap_entry
 #define MULTIBOOT_MEMORY_BADRAM                 5
   uint32_t type;
 } __attribute__((packed));
+
+#endif
