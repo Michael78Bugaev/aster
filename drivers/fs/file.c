@@ -5,7 +5,7 @@
 uint8_t* read_file(const char *name, Directory *dir) {
     File *file = find_file(name, dir);
     if (file) {
-        remove_null_chars(file->data);
+        //remove_null_chars(file->data);
         return file->data;
     } else {
         printf("%s: file not found\n", name);

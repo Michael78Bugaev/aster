@@ -51,13 +51,13 @@ void detect_and_print_video_cards() {
                 // Определяем тип видеокарты
                 const char* device_name = get_device_name(vendor_id, device_id);
                 if (vendor_id == INTEL_VENDOR_ID) {
-                    printf("Intel Video Card: %s [%4x:%4x]\n", device_name, vendor_id, device_id);
+                    printf("<(0f)>[INFO]:<(07)> Intel Video Card: %s [%4x:%4x]\n", device_name, vendor_id, device_id);
                 } else if (vendor_id == AMD_VENDOR_ID) {
-                    printf("AMD Video Card: %s [%4x:%4x]\n", device_name, vendor_id, device_id);
+                    printf("<(0f)>[INFO]:<(07)> AMD Video Card: %s [%4x:%4x]\n", device_name, vendor_id, device_id);
                 } else if (vendor_id == QEMU_VENDOR_ID) {
-                    printf("QEMU Video Card: %s [%4x:%4x]\n", device_name, vendor_id, device_id);
+                    printf("<(0f)>[INFO]:<(07)> QEMU Video Card: %s [%4x:%4x]\n", device_name, vendor_id, device_id);
                 } else if (vendor_id == VMWARE_VENDOR_ID) {
-                    printf("VMware Video Card: %s [%4x:%4x]\n", device_name, vendor_id, device_id);
+                    printf("<(0f)>[INFO]:<(07)> VMware Video Card: %s [%4x:%4x]\n", device_name, vendor_id, device_id);
                 }
             }
         }

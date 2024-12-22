@@ -67,10 +67,9 @@ void	scroll_line()
 
 	while (i < MAX_ROWS)
 	{
-		memcpy(
-			(uint8_t *)(VIDEO_ADDRESS + (MAX_COLS * i * 2)),
-			(uint8_t *)(VIDEO_ADDRESS + (MAX_COLS * (i-1) * 2)),
-			(MAX_COLS*2)
+		memcpy((uint8_t *)(VIDEO_ADDRESS + (MAX_COLS * i * 2)),
+			   (uint8_t *)(VIDEO_ADDRESS + (MAX_COLS * (i - 1) * 2)),
+			   (MAX_COLS*2)
 		);
 		i++;
 	}

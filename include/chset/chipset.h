@@ -12,5 +12,6 @@
 // Функции для работы с чипсетом
 void init_chipset();
 void interrupt_handler(struct InterruptRegisters *regs);
+void get_full_cpu_name();
 
 #endif

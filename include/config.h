@@ -38,6 +38,8 @@
 
 #define VAR_MAXCOUNT 512
 
+char CPUNAME[49];
+
 typedef struct page_dir_entry {
     unsigned int present    : 1;
     unsigned int rw         : 1;

@@ -1,9 +1,24 @@
 OUTPUT_FORMAT(elf32-i386)
 ENTRY(start)
+
 SECTIONS
- {
-   . = 0x100000;
-   .text : { *(.text) }
-   .data : { *(.data) }
-   .bss  : { *(.bss)  }
- }
+{
+  . = 1M;
+
+  .text :
+  {
+  . = ALIGN(8);
+  KEEP(*(.multiboot))
+    *(.text*)
+    *(.rodata)
+  }
+  .data  :
+  {
+    *(.data)
+  }
+
+  .bss  :
+  {
+    *(.bss)
+  }
+}

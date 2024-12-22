@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <io/kb.h>
 #include <vga.h>
 
 void hex_to_str(uint32_t num, char *str);
@@ -165,4 +166,11 @@ void printf(const char* format, ...) {
                 break;
         }
     }
+}
+
+char *scanf()
+{
+    char *to_return;
+    get_string(to_return);
+    return to_return;
 }

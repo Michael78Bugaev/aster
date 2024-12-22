@@ -490,3 +490,71 @@ void itoa(int value, char* str, int base) {
     // Reverse the string
     reverse(str);
 }
+
+char **split(const char *str, int *count, const char delimeter) {
+    // Сначала подсчитаем количество слов
+    int n = 0;
+    const char *ptr = str;
+    while (*ptr) {
+        // Пропускаем пробелы
+        while (*ptr == delimeter) {
+            ptr++;
+        }
+        if (*ptr) {
+            n++; // Нашли слово
+            // Пропускаем само слово
+            while (*ptr && *ptr != delimeter) {
+                ptr++;
+            }
+        }
+    }
+
+    // Выделяем память для массива строк
+    char **result = malloc(n * sizeof(char *));
+    if (!result) {
+        return NULL; // Ошибка выделения памяти
+    }
+
+    // Заполняем массив словами
+    int index = 0;
+    ptr = str;
+    while (*ptr) {
+        // Пропускаем пробелы
+        while (*ptr == delimeter) {
+            ptr++;
+        }
+        if (*ptr) {
+            const char *start = ptr;
+            // Находим конец слова
+            while (*ptr && *ptr != delimeter) {
+                ptr++;
+            }
+            // Выделяем память для слова и копируем его
+            int length = ptr - start;
+            result[index] = malloc((length + 1) * sizeof(char));
+            if (!result[index]) {
+                // Освобождаем ранее выделенную память в случае ошибки
+                for (int j = 0; j < index; j++) {
+                    mfree(result[j]);
+                }
+                mfree(result);
+                return NULL; // Ошибка выделения памяти
+            }
+            strncpy(result[index], start, length);
+            result[index][length] = '\0'; // Завершаем строку нулевым символом
+            index++;
+        }
+    }
+
+    *count = n; // Возвращаем количество найденных слов
+    return result;
+}
+
+bool contain(const char *str, char contain)
+{
+    int i = 0;
+    while (str[i] != '\0') {
+        if (strcmp(str[i], contain) == 0) return true;
+    } 
+    return false;  
+}

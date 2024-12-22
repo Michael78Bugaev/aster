@@ -77,16 +77,27 @@ int get_var_count()
 
 void start_global_config()
 {
-    
+    strcpy(current_directory->name, "/");
+    get_full_cpu_name();
 }
 
 void execute_init(const char *filename) {
     INFO("executing /init as a main script");
+    char init_data[2048];
+    strcpy(init_data, read_file(filename, current_directory));
+    if (contain(init_data, '\n'))
+    {
+
+    }
+    else
+    {
+        execute_sash(init_data);
+    }
 }
 
 void DEBUG(uint8_t *msg)
 {
-    printf("[DEBUG]: %s\n", msg);
+    printf("<(0f)>[DEBUG]:<(07)> %s\n", msg);
 }
 void INFO(uint8_t *msg)
 {

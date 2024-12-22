@@ -71,6 +71,44 @@ void execute_sash(char *arg)
             }
             return;
         }
+        else if (strcmp(args[0], "secout") == 0)
+        {
+            uint8_t buff[512];
+            ide_read_sectors(disk, 0, 1, buff);
+            for (int i = 0; i < 1024; i++)
+            {
+                if (i % 64 == 0)
+                {
+                    printf("\n");
+                }
+                printf("%c", buff[i]);
+            }
+            printf("\n");
+            return;
+        }
+        else if (strcmp(args[0], "secin") == 0)
+        {
+            ide_write_sectors(disk, 0, 1, args[1]);
+            return;
+        }
+        else if (strcmp(args[0], "cpu") == 0)
+        {
+            printf("CPU: %s\n", CPUNAME);
+            return;
+        }
+        else if (strcmp(args[0], "disk") == 0)
+        {
+            if (count == 2)
+            {
+                uint8_t dsk = atoi(args[1]);
+                disk = dsk;
+            }
+            else
+            {
+                printf("<(0f)>[INFO]:<(07)> KERNEL_EXTERNAL_DISK=%u\n", disk);
+            }
+            return;
+        }
         else if (strcmp(args[0], "ls") == 0)
         {
             if (count == 1)
@@ -157,7 +195,7 @@ void execute_sash(char *arg)
         {
             shutdown_system();
         }
-        if (strcmp(args[0], "cd") == 0) {
+        else if (strcmp(args[0], "cd") == 0) {
             if (count == 1) {
                 printf("Usage: &cd <directory>\n");
             } else {
@@ -300,6 +338,10 @@ void execute_sash(char *arg)
                     kprint("Usage: <var_name> = <value>\n");
                 }
             }
+            else if (strcmp(args[1], "\n") == 0)
+            {
+                printf("\n");
+            }
             else
             {
                 printf("sash: %s: incorrect command\n", args[0]);
@@ -434,4 +476,15 @@ void execute_edit(char *filename) {
 void run_debug()
 {
     irq_install_handler(0, &debug_handler);
+}
+
+void sash_shell()
+{
+    char *command;
+    while (1)
+    {
+        printf("%s &", current_directory->name);
+        command = scanf();
+        execute_sash(command);
+    }
 }

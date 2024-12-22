@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdbool.h>
 
 char *strcpy(char *dest, const char *src);
 int strlen(char s[]);
@@ -34,3 +35,5 @@ int istrncmp(const char *str1, const char *str2, int n);
 char *strrchr(const char *str, int character);
 void remove_null_chars(char *str);
 void itoa(int value, char* str, int base);
+char **split(const char *str, int *count, const char delimeter);
+bool contain(const char *str, char contain);

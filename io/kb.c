@@ -47,7 +47,7 @@ void set_barrier(int n)
 
 void handler(struct InterruptRegisters *regs)
 {
-	set_barrier(strlen(current_directory->name) + 2);
+	set_barrier(get_cursor_x());
     char scanCode = port_byte_in(0x60) & 0x7F;
 	char press = port_byte_in(0x60) & 0x80;
     //kprint(lowercase[0x22]);
@@ -75,13 +75,13 @@ void handler(struct InterruptRegisters *regs)
                 capsOn = true;
                 int old = get_cursor();
                 set_cursor(0);
-                kprintc(" SHIFT", 0x70);
+                kprintc(" SHIFT", 0x07);
                 set_cursor(old);
             }else{
                 capsOn = false;
                 int old = get_cursor();
                 set_cursor(0);
-                kprintc("      ", 0x70);
+                kprintc("      ", 0x07);
                 set_cursor(old);
             }
             break;
@@ -91,7 +91,7 @@ void handler(struct InterruptRegisters *regs)
                 capsLock = true;
                 int old = get_cursor();
                 set_cursor(0);
-                kprintc(" CAPS LOCK", 0x70);
+                kprintc(" CAPS LOCK", 0x07);
                 set_cursor(old);
             }
             else if (capsLock && press == 0)
@@ -99,7 +99,7 @@ void handler(struct InterruptRegisters *regs)
                 capsLock = false;
                 int old = get_cursor();
                 set_cursor(0);
-                kprintc("          ", 0x70);
+                kprintc("          ", 0x07);
                 set_cursor(old);
             }
             break;
@@ -117,17 +117,17 @@ void handler(struct InterruptRegisters *regs)
             if (press == 0)
                 if (get_cursor_x() > barrier)
                 {
-                  kprint("\b");
                   backspace_func(input);
+                  kprint("\b");
                 }
             break;
         case 0x1C:
             if (press == 0)
             {
-                kprint("\n");
+                printf("\n");
                 //input[0] = '\0';
                 enter = true;
-                irq_uninstall_handler(1);
+                //irq_uninstall_handler(1);
             }
             else;    
                 
@@ -301,7 +301,7 @@ void sash(struct InterruptRegisters *regs)
             if (press == 0 && cursor_index > 0) {
                 cursor_index--;
                 // Перемещение курсора влево на экране
-                set_cursor(get_cursor() - 1); // Предполагается, что kprint поддерживает этот код
+                set_cursor(get_cursor() - 1);
             }
             break;
         case 0x4D: // Стрелка вправо
@@ -433,7 +433,9 @@ void get_string(uint8_t *buffer)
       irq_install_handler(1, &handler);
     }
     enter = false;
-    buffer = input;
+    strcpy(buffer, input);
+    strnone(input);
+    //buffer = input;
     
 }
 char *agent_get_string()
