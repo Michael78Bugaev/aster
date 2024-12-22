@@ -2,6 +2,7 @@
 #include <fs/initrd.h>
 #include <fs/file.h>
 #include <stdint.h>
+#include <drv/vbe.h>
 #include <string.h>
 #include <stdio.h>
 #include <sash.h>
@@ -79,6 +80,8 @@ void start_global_config()
 {
     strcpy(current_directory->name, "/");
     get_full_cpu_name();
+    _globl_cursor.x = 0; // VBE Cursor X
+    _globl_cursor.y = 0; // VBE Cursor Y
 }
 
 void execute_init(const char *filename) {

@@ -469,13 +469,16 @@ struct _vbe_cursor
 {
     uint32_t x;
     uint32_t y;
-};
+} _globl_cursor;
 
 
 void pixel(struct multiboot_info* mboot, int x, int y, uint8_t color);
 void print_char(struct multiboot_info* boot_info, char c, int x, int y, uint16_t color);
 void display_text(struct multiboot_info* boot_info, const char *text, int start_x, int start_y, uint16_t color);
 void vbe_printf(struct multiboot_info* boot_info, char *text, int x, int y, uint16_t color);
-void print_text(struct multiboot_info* boot_info, const char *text);
+void init_vbe_terminal(struct multiboot_info* boot_info);
+void vbe_screen_clear(struct multiboot_info* boot_info, uint8_t color);
+
+void _print(struct _vbe_cursor cursor_t, char *text);
 
 #endif

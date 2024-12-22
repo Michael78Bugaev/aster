@@ -2,6 +2,7 @@
 #define CONFIG_H
 #include <stdint.h>
 #include <drv/ata.h>
+#include <multiboot.h>
 
 
 #define FAT16_MAX_FILESYSTEMS 10
@@ -92,6 +93,7 @@ struct global_variable {
 int disk = 0;
 struct global_variable var[];
 IDE_DEVICE _global_ata_devices[2];
+struct multiboot_info* _GLOBAL_MBOOT;
 
 struct global_variable* find_variable(const char *name);
 void init_variable(const char *name, const char *value, int type);
