@@ -185,15 +185,16 @@ Directory* find_directory(const char *name, Directory *dir) {
     return NULL;
 }
 
-void delete_file(const char *name, Directory *dir) {
+int delete_file(const char *name, Directory *dir) {
     for (uint32_t i = 0; i < dir->file_count; i++) {
         if (strcmp(dir->files[i]->name, name) == 0) {
             mfree(dir->files[i]-> data);
             mfree(dir->files[i]);
             dir->files[i] = dir->files[--dir->file_count]; // Удаление файла
-            return;
+            return 1;
         }
     }
+    return 0;
 }
 
 void delete_directory(const char *name, Directory *parent) {

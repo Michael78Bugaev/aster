@@ -40,7 +40,7 @@ Directory* create_directory(const char *path);
 File* create_file(const char *name, const uint8_t *data, uint32_t size, Directory *dir);
 File* find_file(const char *name, Directory *dir);
 Directory* find_directory(const char *name, Directory *dir);
-void delete_file(const char *name, Directory *dir);
+int delete_file(const char *name, Directory *dir);
 void delete_directory(const char *name, Directory *parent);
 void rename_file(const char *old_name, const char *new_name, Directory *dir);
 void rename_directory(const char *old_name, const char *new_name, Directory *parent);
