@@ -3,7 +3,10 @@
 #include <vga.h>
 #include <stdio.h>
 #include <fs/initrd.h>
+#include <config.h>
 #include <fs/dir.h>
+#include <drv/vbe.h>
+#include <multiboot.h>
 #include <sash.h>
 #include <string.h>
 #include <stdint.h>
@@ -73,44 +76,28 @@ void handler(struct InterruptRegisters *regs)
         case 42:
             if (press == 0) {
                 capsOn = true;
-                int old = get_cursor();
-                set_cursor(0);
-                kprintc(" SHIFT", 0x07);
-                set_cursor(old);
             }else{
                 capsOn = false;
-                int old = get_cursor();
-                set_cursor(0);
-                kprintc("      ", 0x07);
-                set_cursor(old);
             }
             break;
         case 58:
             if (!capsLock && press == 0)
             {
                 capsLock = true;
-                int old = get_cursor();
-                set_cursor(0);
-                kprintc(" CAPS LOCK", 0x07);
-                set_cursor(old);
             }
             else if (capsLock && press == 0)
             {
                 capsLock = false;
-                int old = get_cursor();
-                set_cursor(0);
-                kprintc("          ", 0x07);
-                set_cursor(old);
             }
             break;
         case 40:
             if (press)
-                putchar('\'', 0x07);
+                printf("\'");
                 join(input, '\'');
             break;
         case 0x29:
             if (press)
-                putchar('~', 0x07);
+                printf("~");
                 join(input, '~');
             break;
         case 0x0E:
@@ -140,23 +127,23 @@ void handler(struct InterruptRegisters *regs)
             {
                 if (capsOn || capsLock)
                 {
-                    kprintci_vidmem(scanCode, 0x70, 150);
                     putchar(get_acsii_high(scanCode), 0x07);
+                    _globl_cursor.x++;
                     join(input, get_acsii_high(scanCode));
                 }
                 else
                 {
-                    kprintci_vidmem(scanCode, 0x70, 150);
                     putchar(get_acsii_low(scanCode), 0x07);
+                    _globl_cursor.x++;
                     join(input, get_acsii_low(scanCode));
                 }
             }
-            else{
-              int old = get_cursor();
-              set_cursor(150);
-              kprintc("     ", 0x70);
-              set_cursor(old);
-            }
+            // else{
+            //   int old = get_cursor();
+            //   set_cursor(150);
+            //   kprintc("     ", 0x70);
+            //   set_cursor(old);
+            // }
             break;
     }
 }
@@ -331,19 +318,19 @@ void sash(struct InterruptRegisters *regs)
             if (press) {
                 if (capsOn || capsLock)
                 {
-                  putchar('\"', 0x07);
+                  printf("\"");
                   join(input, '\"'); 
                 }
                 else
                 {
-                  putchar('\'', 0x07);
+                  printf("\'");
                   join(input, '\''); 
                 }
             }
             break;
         case 0x29:
             if (press)
-                putchar('~', 0x07);
+                printf("~");
                 join(input, '~');
             break;
         case 0x0E:
@@ -358,28 +345,14 @@ void sash(struct InterruptRegisters *regs)
             if (press == 0)
             {
                 //kprint("\n");
+                printf("\n");
                 //input[0] = '\0';
                 enter = true;
-                add_to_history(input);
                 execute_sash(input);
                 
-                if (strcmp(current_directory->name, "/") == 0)
-                {
-                  printf("\n/ &");
-                  strnone(input);
-                  return;
-                }
-
-                if (startsWith(current_directory->name, "/") == 0)
-                {
-                  printf("\n/%s &", current_directory->name);
-                }
-                else
-                {
-                  printf("\n%s &", current_directory->name);
-                }
-                
                 strnone(input);
+                printf(" &");
+                return;
             }
             else;    
                 
@@ -393,11 +366,13 @@ void sash(struct InterruptRegisters *regs)
                 if (capsOn || capsLock)
                 {
                     putchar(get_acsii_high(scanCode), 0x07);
+                    _globl_cursor.x++;
                     join(input, get_acsii_high(scanCode));
                 }
                 else
                 {
                     putchar(get_acsii_low(scanCode), 0x07);
+                    _globl_cursor.x++;
                     join(input, get_acsii_low(scanCode));
                 }
             }
@@ -427,7 +402,7 @@ void add_to_history(const char *command) {
 
 void get_string(uint8_t *buffer)
 {
-    barrier = get_cursor_x();
+    barrier = _globl_cursor.x;
     while (enter != true)
     {
       irq_install_handler(1, &handler);

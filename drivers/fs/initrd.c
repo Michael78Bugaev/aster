@@ -10,17 +10,17 @@
 Directory* fscreate_directory(const char *name, Directory *parent);
 
 void init_vfs() {
-    DEBUG("currently running shfs v.0.06 (initfs)");
+    INFO("SHFS VFS 0.06");
     root = (Directory *)malloc(sizeof(Directory));
     strncpy(root->name, "/", MAX_FILENAME_LENGTH);
     root->parent = NULL;
     root->file_count = 0;
     root->dir_count = 0;
     current_directory = root; // Устанавливаем текущую директорию как корневую
-    execfs = create_directory("/exec");
-    tmpfs = create_directory("/temp");
+    execfs = create_directory("/bin");
+    tmpfs = create_directory("/tmp");
     devfs = create_directory("/dev");
-    userfs = create_directory("/user");
+    userfs = create_directory("/usr");
     sysfs = create_directory("/sys");
 
     // for (int i = 0; i < pci_device_count; i++) {
@@ -58,23 +58,23 @@ void init_vfs() {
 
     uint8_t *data = "lalalaaaa\nalalaaaa";
 
-    File *help_bin = new_file("/exec/help.bin", NULL, NULL);
-    File *clear_bin = new_file("/exec/clear.bin", NULL, NULL);
-    File *ls_bin = new_file("/exec/ls.bin", NULL, NULL);
-    File *cd_bin = new_file("/exec/cd.bin", NULL, NULL);
-    File *mkdir_bin = new_file("/exec/mkdir.bin", NULL, NULL);
-    File *rm_bin = new_file("/exec/rm.bin", NULL, NULL);
-    File *cp_bin = new_file("/exec/cp.bin", NULL, NULL);
-    File *mv_bin = new_file("/exec/mv.bin", NULL, NULL);
-    File *cat_bin = new_file("/exec/cat.bin", NULL, NULL);
-    File *echo_bin = new_file("/exec/echo.bin", NULL, NULL);
-    File *mkdirp_bin = new_file("/exec/mkdirp.bin", NULL, NULL);
-    File *touch_bin = new_file("/exec/touch.bin", NULL, NULL);
-    File *rmrf_bin = new_file("/exec/rmrf.bin", NULL, NULL);
-    File *chmod_bin = new_file("/exec/chmod.bin", NULL, NULL);
-    File *chown_bin = new_file("/exec/chown.bin", NULL, NULL);
-    File *chgrp_bin = new_file("/exec/chgrp.bin", NULL, NULL);
-    File *ln_bin = new_file("/exec/ln.bin", data, sizeof(data));
+    File *help_bin = new_file("/bin/help.bin", NULL, NULL);
+    File *clear_bin = new_file("/bin/clear.bin", NULL, NULL);
+    File *ls_bin = new_file("/bin/ls.bin", NULL, NULL);
+    File *cd_bin = new_file("/bin/cd.bin", NULL, NULL);
+    File *mkdir_bin = new_file("/bin/mkdir.bin", NULL, NULL);
+    File *rm_bin = new_file("/bin/rm.bin", NULL, NULL);
+    File *cp_bin = new_file("/bin/cp.bin", NULL, NULL);
+    File *mv_bin = new_file("/bin/mv.bin", NULL, NULL);
+    File *cat_bin = new_file("/bin/cat.bin", NULL, NULL);
+    File *echo_bin = new_file("/bin/echo.bin", NULL, NULL);
+    File *mkdirp_bin = new_file("/bin/mkdirp.bin", NULL, NULL);
+    File *touch_bin = new_file("/bin/touch.bin", NULL, NULL);
+    File *rmrf_bin = new_file("/bin/rmrf.bin", NULL, NULL);
+    File *chmod_bin = new_file("/bin/chmod.bin", NULL, NULL);
+    File *chown_bin = new_file("/bin/chown.bin", NULL, NULL);
+    File *chgrp_bin = new_file("/bin/chgrp.bin", NULL, NULL);
+    File *ln_bin = new_file("/bin/ln.bin", data, sizeof(data));
 }
 
 Directory* get_root_directory() {
@@ -112,12 +112,43 @@ Directory* fscreate_directory(const char *name, Directory *parent) {
     }
 
     Directory *new_dir = (Directory *)malloc(sizeof(Directory));
-    strncpy(new_dir->name, name, MAX_FILENAME_LENGTH);
+    if (new_dir == NULL) {
+        return NULL; // Ошибка выделения памяти
+    }
+
+    // Устанавливаем имя директории
+    for (int i = 0; i < MAX_FILENAME_LENGTH && name[i] != '\0'; i++) {
+        new_dir->name[i] = name[i];
+    }
+    new_dir->name[MAX_FILENAME_LENGTH - 1] = '\0'; // Завершаем строку
+
     new_dir->parent = parent;
     new_dir->file_count = 0;
     new_dir->dir_count = 0;
 
-    parent->subdirs[parent->dir_count++] = new_dir;
+    // Устанавливаем полное имя директории
+    if (parent->full_name[0] == '\0') {
+        // Если родительская директория корневая
+        for (int i = 0; i < MAX_PATH_LENGTH && new_dir->name[i] != '\0'; i++) {
+            new_dir->full_name[i] = new_dir->name[i];
+        }
+        new_dir->full_name[MAX_PATH_LENGTH - 1] = '\0'; // Завершаем строку
+    } else {
+        // Копируем полное имя родительской директории
+        int i = 0;
+        while (parent->full_name[i] != '\0' && i < MAX_PATH_LENGTH - 1) {
+            new_dir->full_name[i] = parent->full_name[i];
+            i++;
+        }
+        new_dir->full_name[i++] = '/'; // Добавляем разделитель
+        // Добавляем имя новой директории
+        for (int j = 0; j < MAX_FILENAME_LENGTH && new_dir->name[j] != '\0' && i < MAX_PATH_LENGTH - 1; j++) {
+            new_dir->full_name[i++] = new_dir->name[j];
+        }
+        new_dir->full_name[i] = '\0'; // Завершаем строку
+    }
+
+    parent->subdirs[parent->dir_count++] = new_dir; // Добавляем новую директорию в родительскую
     return new_dir;
 }
 

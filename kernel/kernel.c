@@ -20,24 +20,28 @@
 
 void kentr(uint32_t magic, struct multiboot_info* boot_info) {
     init_gdt();
-    _GLOBAL_MBOOT = boot_info;
+    //_GLOBAL_MBOOT = boot_info;
     init_idt();
     init_pit();
-
     init_dmem();
     init_chipset();
     pci_init();
     ata_init();
     init_vfs();
     start_global_config();
-    vbe_screen_clear(boot_info, 0x00);
-    // vbe_printf(boot_info, "Aster Operating System 0.7", 0, 0, 0x07);
-    // vbe_printf(boot_info, "Copyright (C) 2024-2025 Michael Bugaev", 0, 1, 0x07);
-    // vbe_printf(boot_info, "/ &", 0, 3, 0x07);
+    ata_init();
+    printf("\nLocal host name: ");
+    char *cusr = scanf();
+    strcpy(COMPUTER_NAME, cusr);
+    printf("\nLogin: ");
+    char *usr = scanf();
+    strcpy(current_username, usr);
+    //vbe_screen_clear(boot_info, 0x0f);
+    // _globl_cursor.x = 0;
+    // _globl_cursor.y = 0;
+    // printf("Test\n");
 
-    _print(_globl_cursor, "Testing!");
-    _print(_globl_cursor, "Aster!");
-
+    //irq_install_handler(1, &sash);
     sash_shell();
     
 }

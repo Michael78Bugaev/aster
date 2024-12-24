@@ -1,5 +1,6 @@
 #include <cpu/gdt.h>
 #include <vga.h>
+#include <drv/vbe.h>
 #include <stdio.h>
 #include <config.h>
 #include <io/iotools.h>
@@ -13,6 +14,8 @@ struct tss_entry_t tss_entry;
 
 void init_gdt()
 {
+    _globl_cursor.x = 0;
+    _globl_cursor.y = 0;
     INFO("gdt loading");
     gdt_ptr.limit = (sizeof(struct gdt_entry_t) * 6) - 1;
     gdt_ptr.base = (uint32_t)&gdt_entries;

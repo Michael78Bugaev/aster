@@ -10,6 +10,7 @@
 #include <vga.h>
 #include <io/iotools.h>
 #include <cpu/pit.h>
+#include <drv/vbe.h>
 #include <stdint.h>
 
 void	kprint(uint8_t *str)
@@ -47,7 +48,7 @@ void	putchar(uint8_t character, uint8_t attribute_byte)
     else if (character == '\b')
     {
         set_cursor(get_cursor() - 1);
-        kprint(" ");
+        putchar(' ', attribute_byte);
         set_cursor(get_cursor() - 2);
     }
 	else 

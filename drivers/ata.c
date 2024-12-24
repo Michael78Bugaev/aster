@@ -1,6 +1,5 @@
 #include <drv/ata.h>
 #include <stdio.h>
-#include <stdio.h>
 #include <io/iotools.h>
 #include <string.h>
 #include <config.h>
@@ -326,7 +325,7 @@ void ide_init(uint32_t prim_channel_base_addr, uint32_t prim_channel_control_bas
     }
 
     // 4- Print Summary:
-    for (i = 0; i < 4; i++) // 5OFFTOUS
+    for (i = 0; i < 4; i++)
         if (g_ide_devices[i].reserved == 1) {
             // printf("%d:-\n", i);
             // printf("  model: %s\n", g_ide_devices[i].model);
@@ -335,7 +334,7 @@ void ide_init(uint32_t prim_channel_base_addr, uint32_t prim_channel_control_bas
             // printf("  base: 0x%x, control: 0x%x\n", g_ide_channels[i].base, g_ide_channels[i].control);
             // printf("  size: %u sectors, %u bytes\n", g_ide_devices[i].size, g_ide_devices[i].size * ATA_SECTOR_SIZE);
             // printf("  signature: 0x%x, features: %d\n", g_ide_devices[i].signature, g_ide_devices[i].features);
-			printf("<(0f)>[INFO]:<(07)> found %s disk no. %d, %u sectors\n", (const char *[]){"ATA", "ATAPI"}[g_ide_devices[i].type], i, g_ide_devices[i].size);
+			INFO("'%s' on drive %d, type %s, %d sectors", g_ide_devices[i].model, i, (const char *[]){"ATA", "ATAPI"}[g_ide_devices[i].type], g_ide_devices[i].size);
         }
 }
 
@@ -428,7 +427,6 @@ uint8_t ide_ata_access(uint8_t direction, uint8_t drive, uint32_t lba, uint8_t n
     ide_write_register(channel, ATA_REG_COMMAND, cmd);  // Send the Command.
 
     if (dma) {
-        printf("dma true\n");
         if (direction == ATA_READ) {
             // DMA Read
         } else {
@@ -479,7 +477,7 @@ void ide_irq() {
 int ide_read_sectors(uint8_t drive, uint8_t num_sectors, uint32_t lba, uint32_t buffer) {
     // 1: Check if the drive presents:
     if (drive > MAXIMUM_IDE_DEVICES || g_ide_devices[drive].reserved == 0) {
-        // printf("\n[ERR]: drive %u not found\n", drive);
+        printf("\n[ERR]: drive %u not found\n", drive);
         return -1;
     }
     // 2: Check if inputs are valid:
@@ -530,4 +528,5 @@ int ata_get_drive_by_model(const char *model) {
         if(strcmp((const char*)g_ide_devices[i].model, (char *)model) == 0)
             return i;
     }
+    return -1;
 }

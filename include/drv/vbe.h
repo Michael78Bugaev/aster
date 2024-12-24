@@ -479,6 +479,6 @@ void vbe_printf(struct multiboot_info* boot_info, char *text, int x, int y, uint
 void init_vbe_terminal(struct multiboot_info* boot_info);
 void vbe_screen_clear(struct multiboot_info* boot_info, uint8_t color);
 
-void _print(struct _vbe_cursor cursor_t, char *text);
+void _print(char *text);
 
 #endif

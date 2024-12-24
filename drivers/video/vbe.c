@@ -40,14 +40,24 @@ void display_text(struct multiboot_info* boot_info, const char *text, int start_
     int y = start_y;
 
     while (*text) {
-        print_char(boot_info, *text, x, y, color); // Печатаем символ с цветом
-        x += FONT_WIDTH; // Переход к следующей позиции символа
-        if (x >= boot_info->framebuffer_width) { // Если достигнут конец строки
-            x = start_x; // Сбрасываем x
-            y += FONT_HEIGHT; // Переход на следующую строку
-            newline = true;
+        if (*text == '\n')
+        {
+            _globl_cursor.x = 0;
+            _globl_cursor.y++;
+            text++;
         }
-        text++;
+        else
+        {
+            print_char(boot_info, *text, x, y, color); // Печатаем символ с цветом
+            _globl_cursor.x++;
+            x += FONT_WIDTH; // Переход к следующей позиции символа
+            if (x >= boot_info->framebuffer_width) { // Если достигнут конец строки
+                x = start_x; // Сбрасываем x
+                y += FONT_HEIGHT; // Переход на следующую строку
+                newline = true;
+            }
+            text++;
+        }
     }
 }
 
@@ -97,13 +107,7 @@ void vbe_screen_clear(struct multiboot_info* boot_info, uint8_t color)
     }
 }
 
-void _print(struct _vbe_cursor cursor_t, char *text) {
-    vbe_printf(_GLOBAL_MBOOT, text, cursor_t.x, cursor_t.y, 0x07);
-    cursor_t.x += strlen(text); // Увеличиваем x на длину текста
-
-    // Если x выходит за пределы ширины экрана, сбрасываем его и увеличиваем y
-    if (cursor_t.x >= _GLOBAL_MBOOT->framebuffer_width / FONT_WIDTH) {
-        cursor_t.x = 0; // Сбрасываем x
-        cursor_t.y++; // Переход на следующую строку
-    }
+void _print(char *text) {
+    vbe_printf(_GLOBAL_MBOOT, text, _globl_cursor.x, _globl_cursor.y, 0x07);
+    //_globl_cursor.x += strlen(text); // Увеличиваем x на длину текста
 }

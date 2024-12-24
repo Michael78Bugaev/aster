@@ -9,7 +9,7 @@ void init_chipset() {
     // Настройка базовых регистров чипсета
     port_byte_out(CHIPS_BASE_ADDRESS + CHIPS_CONFIG_REGISTER, 0x01); // Пример настройки
     port_byte_out(CHIPS_BASE_ADDRESS + CHIPS_STATUS_REGISTER, 0x00); // Сброс статуса
-    INFO("chipset detected (universal chipset driver)");
+    INFO("Chipset detected (universal chipset driver)");
 }
 
 // Обработчик прерываний
@@ -61,8 +61,8 @@ void get_full_cpu_name() {
     cpu_name[48] = '\0'; // Завершаем строку
 
     // Выводим информацию о процессоре
-    printf("<(0f)>[INFO]:<(07)> cpu: vendor: %s\n", vendor);
-    printf("<(0f)>[INFO]:<(07)> cpu: %s\n", cpu_name);
+    INFO("CPU: vendor: %s", vendor);
+    INFO("CPU: %s", cpu_name);
     strcpy(CPUNAME, cpu_name);
     //CPUNAME = cpu_name;
 }

@@ -6,6 +6,7 @@
 #define MAX_FILES 128
 #define MAX_FILENAME_LENGTH 32
 #define MAX_DIRS 128
+#define MAX_PATH_LENGTH 1024
 
 typedef struct File {
     char name[MAX_FILENAME_LENGTH];
@@ -15,6 +16,7 @@ typedef struct File {
 
 typedef struct Directory {
     char name[MAX_FILENAME_LENGTH];
+    char full_name[MAX_PATH_LENGTH]; // Полное имя директории
     struct Directory *parent; // Родительская директория
     struct Directory *subdirs[MAX_DIRS]; // Подкаталоги
     File *files[MAX_FILES]; // Файлы в директории

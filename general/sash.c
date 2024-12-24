@@ -7,6 +7,9 @@
 #include <drv/ata.h>
 #include <fs/ext2.h>
 #include <fs/dir.h>
+#include <drv/vbe.h>
+#include <config.h>
+#include <multiboot.h>
 #include <stdio.h>
 #include <cpu/mem.h>
 #include <chset/chipset.h>
@@ -30,12 +33,11 @@ void execute_sash(char *arg)
     char **args = splitString(arg, &count);
     if (count > 0)
     {
-        printf("\n");
         if (strcmp(args[0], "help") == 0)
         {
             if (count > 1)
             {
-                kprint("Usage: &help\n\n");
+                printf("Usage: &help\n\n");
             }
             else
             {
@@ -71,11 +73,17 @@ void execute_sash(char *arg)
             }
             return;
         }
-        else if (strcmp(args[0], "secout") == 0)
+        else if (strcmp(args[0], "pwd") == 0)
+        {
+            printf(current_directory->full_name);
+            printf("\n");
+            return;
+        }
+        else if (strcmp(args[0], "out") == 0)
         {
             uint8_t buff[512];
-            ide_read_sectors(disk, 0, 1, buff);
-            for (int i = 0; i < 1024; i++)
+            ide_read_sectors(disk, 0, 0, buff);
+            for (int i = 0; i < 4096; i++)
             {
                 if (i % 64 == 0)
                 {
@@ -86,14 +94,15 @@ void execute_sash(char *arg)
             printf("\n");
             return;
         }
-        else if (strcmp(args[0], "secin") == 0)
+        else if (strcmp(args[0], "in") == 0)
         {
-            ide_write_sectors(disk, 0, 1, args[1]);
+            ide_write_sectors(disk, 0, 0, args[1]);
             return;
         }
         else if (strcmp(args[0], "cpu") == 0)
         {
-            printf("CPU: %s\n", CPUNAME);
+            printf(CPUNAME);
+            printf("\n");
             return;
         }
         else if (strcmp(args[0], "disk") == 0)
@@ -338,17 +347,14 @@ void execute_sash(char *arg)
                     kprint("Usage: <var_name> = <value>\n");
                 }
             }
-            else if (strcmp(args[1], "\n") == 0)
-            {
-                printf("\n");
-            }
             else
             {
-                printf("sash: %s: incorrect command\n", args[0]);
+                printf("sash: incorrect command\n");
+                strnone(arg);
             }
         }
     }
-    else;
+    else strnone(arg);
 }
 
 void execute_ls(char *path) {
@@ -367,12 +373,42 @@ void execute_mkdir(char *name) {
     }
 }
 
-void execute_touch(char *name) {
-    // Создаем пустой файл
-    File *file = new_file(name, NULL, 0);
-    if (file) {
+void execute_touch(char *path) {
+    // Проверяем, что путь не пустой
+    if (path == NULL || strlen(path) == 0) {
+        printf("Usage: touch <file>\n");
+        return;
+    }
+
+    // Находим последнюю '/' в пути
+    char *last_slash = strrchr(path, '/');
+    if (last_slash != NULL) {
+        // Разделяем путь на директорию и имя файла
+        *last_slash = '\0'; // Завершаем строку на месте последнего '/'
+        char *filename = last_slash + 1; // Имя файла
+
+        // Находим или создаем директорию
+        Directory *target_dir = find_or_create_directory(path);
+        if (target_dir == NULL) {
+            printf("Error: Directory not found for path: %s\n", path);
+            return;
+        }
+
+        // Создаем пустой файл в найденной директории
+        File *file = create_file(filename, NULL, 0, target_dir);
+        if (file) {
+            printf("File created: %s/%s\n", path, filename);
+        } else {
+            printf("Error: Failed to create file %s\n", filename);
+        }
     } else {
-        printf("touch: %s: Failed to create file\n", name);
+        // Если '/' не найден, создаем файл в текущей директории
+        File *file = create_file(path, NULL, 0, current_directory);
+        if (file) {
+            printf("File created: %s\n", path);
+        } else {
+            printf("Error: Failed to create file %s\n", path);
+        }
     }
 }
 
@@ -483,7 +519,7 @@ void sash_shell()
     char *command;
     while (1)
     {
-        printf("%s &", current_directory->name);
+        printf("<(0a)>%s@%s<(0f)>:<(09)>/%s<(07)> &", current_username, COMPUTER_NAME, current_directory->full_name);
         command = scanf();
         execute_sash(command);
     }

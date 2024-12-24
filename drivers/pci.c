@@ -478,7 +478,7 @@ void initialize_and_print_pci_devices() {
                 const char* device_name = get_device_name(vendor_id, device_id);
 
                 // Вывод информации об устройстве
-                printf("<(0f)>[INFO]:<(07)> pci [%4x:%4x] class: 0x%2x subclass: 0x%2x\n", vendor_id, device_id, class_id, subclass);
+                INFO("pci [%4x:%4x] class: 0x%2x subclass: 0x%2x", vendor_id, device_id, class_id, subclass);
             }
         }
     }

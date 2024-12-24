@@ -14,7 +14,7 @@ void init_dmem()
     dynamic_mem_start->size = DYNAMIC_MEM_TOTAL_SIZE - DYNAMIC_MEM_NODE_SIZE;
     dynamic_mem_start->next = NULL_POINTER;
     dynamic_mem_start->prev = NULL_POINTER;
-    INFO("dmem v.0.9");
+    INFO("Dynamic memory manager v.0.9");
     // kprint("dmem: dynamic memory managment total size: ");
     // kprintci(((int)dynamic_mem_start->size / 1024) / 1024, 0x03);
     // kprint(" mbytes\n");

@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <config.h>
+#include <drv/vbe.h>
 #include <stdint.h>
 
 uint64_t ticks;
@@ -24,7 +25,7 @@ void init_pit()
     INFO("installing irq 0 for timer");
     ticks = 0;
     target = 0;
-    //irq_install_handler(0, &pit_handler);
+    irq_install_handler(0, &pit_handler);
     uint32_t div = 1193180 / freq;
 
     port_byte_out(0x43, 0x36);
@@ -39,19 +40,36 @@ void pit_handler(struct InterruptRegisters *regs)
     // if (ticks * (1000 / TICKS_PER_SECOND) - last_blink_time >= blink_interval) {
     //     cursor_visible = !cursor_visible; // Меняем состояние видимости курсора
     //     last_blink_time = ticks * (1000 / TICKS_PER_SECOND); // Обновляем время последнего мигания
-    // }
-
+    
     // // Здесь вы можете добавить код для отрисовки курсора, если он видим
-    // if (cursor_visible) {
-    //     unsigned char *vga = (unsigned char*)VIDEO_ADDRESS;
-    //     vga[get_cursor() * 2] = ' ';
-    //     vga[get_cursor() * 2 + 1] = 0x70;
-    // } else {
-    //     unsigned char *vga = (unsigned char*)VIDEO_ADDRESS;
-    //     vga[get_cursor() * 2] = ' ';
-    //     vga[get_cursor() * 2 + 1] = 0x00;
+    // if (cursor_visible) 
+    // {
+    //     for (int x = 0; x < 8; x++)
+    //     {
+    //         for (int y = 0; y < 8; y++)
+    //         {
+    //             int xpos = _globl_cursor.x * 8;
+    //             int ypos = _globl_cursor.y * 8;
+    //             pixel(_GLOBAL_MBOOT, xpos + x, ypos + y, 0x07);
+    //         }
+    //     }
+    // } 
+    // else 
+    // {
+    //     for (int x = 0; x < 8; x++)
+    //     {
+    //         for (int y = 0; y < 8; y++)
+    //         {
+    //             int xpos = _globl_cursor.x * 8;
+    //             int ypos = _globl_cursor.y * 8;
+    //             pixel(_GLOBAL_MBOOT, xpos + x, ypos + y, 0x00);
+    //         }
+    //     }
     // }
+    // }
+    
 }
+
 
 void wait(int ms)
 {
