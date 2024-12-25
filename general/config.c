@@ -214,20 +214,111 @@ void INFO(const char* format, ...) {
     putchar('\n', current_color); // Переход на новую строку
 }
 
-int add_IDE_to_list(IDE_DEVICE device)
+void ERRORf(const char* format, ...)
 {
-    if (_current_ata_num == 2)
-    {
-        return NULL;
-    }
-    else
-    {
-        _global_ata_devices[_current_ata_num + 1] = device;
-        _current_ata_num++;
-    }
-}
+    char c;
+    uint8_t current_color = 0x07; // По умолчанию светло-серый текст на черном фоне
+    char **arg = (char **) &format; // Указатель на аргументы
+    int *int_arg;
+    char *str_arg;
+    char num_buf[32];
+    unsigned int uint_arg;
 
-struct _global_ata_devices *list_ide()
-{
-    return _global_ata_devices;
+    arg++; // Переходим к первому аргументу после format
+
+    // Печатаем префикс
+    printf("[ <(0c)>ERROR<(07)>  ]: ");
+
+    while ((c = *format++) != 0) {
+        if (c == '<' && *format == '(') {
+            format++; // Пропускаем '('
+
+            // Читаем два символа цветового кода
+            char bg_color = *format++;
+            char fg_color = *format++;
+
+            if (*format == ')' && *(format + 1) == '>') {
+                current_color = parse_color_code(bg_color, fg_color);
+                format += 2; // Пропускаем ')>'
+                continue;
+            }
+        }
+
+        if (c != '%') {
+            putchar(c, current_color);
+            continue;
+        }
+
+        c = *format++;
+        int width = 0; // Инициализируем ширину
+
+        // Обработка ширины
+        while (c >= '0' && c <= '9') {
+            width = width * 10 + (c - '0'); // Собираем число
+            c = *format++; // Переходим к следующему символу
+        }
+
+        switch (c) {
+            case 'd':
+                int_arg = (int *)arg++;
+                // Преобразуем число в строку вручную
+                int num = *int_arg;
+                int i = 0;
+                if (num < 0) {
+                    putchar('-', current_color);
+                    num = -num;
+                }
+                do {
+                    num_buf[i++] = (num % 10) + '0';
+                    num /= 10;
+                } while (num > 0);
+                // Выводим число в обратном порядке
+                for (int j = i - 1; j >= 0; j--) {
+                    putchar(num_buf[j], current_color);
+                }
+                break;
+            case 's':
+                str_arg = *(char **)arg++;
+                while (*str_arg) {
+                    putchar(*str_arg++, current_color);
+                }
+                break;
+            case 'x': {
+                int_arg = (int *)arg++;
+                hex_to_str(*int_arg, num_buf);
+                int len = strlen(num_buf);
+                // Добавляем пробелы для выравнивания
+                for (int i = 0; i < width - len; i++) {
+                    putchar('0', current_color); // Заполняем нулями
+                }
+                for (char *ptr = num_buf; *ptr; ptr++) {
+                    putchar(*ptr, current_color);
+                }
+                break;
+            }
+
+            case 'X': {
+                int_arg = (int *)arg++;
+                hex_to_str(*int_arg, num_buf);
+                int len = strlen(num_buf);
+                // Добавляем пробелы для выравнивания
+                for (int i = 0; i < width - len; i++) {
+                    putchar('0', current_color); // Заполняем нулями
+                }
+                for (char *ptr = num_buf; *ptr; ptr++) {
+                    putchar(*ptr, current_color);
+                }
+                break;
+            }
+            case 'c':
+                int_arg = (int *)arg++;
+                putchar((char)(*int_arg), current_color);
+                break;
+
+            default:
+                putchar(c, current_color);
+                break;
+        }
+    }
+    putchar('\n', current_color); // Переход на новую строку
 }

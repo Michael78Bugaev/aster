@@ -1,6 +1,7 @@
 #include <fs/fat32.h>
 #include <io/iotools.h>
 #include <drv/ata.h>
+#include <config.h>
 #include <string.h>
 #include <stdbool.h>
 #include <cpu/mem.h>
@@ -29,19 +30,16 @@ uint32_t FAT_ClusterToLba(uint32_t cluster)
 }
 
 void FAT_readfat(uint32_t lba_index){
-	ide_read_sectors(DRIVE, FAT_CACHE_SIZE, g_fat_bpb->reserved_sector_count + lba_index, g_FAT_Cache);
 }
 
 fat_bpb* fat_read_bpb(){
 	uint32_t* bpb = malloc(sizeof(fat_bpb));
-	ide_read_sectors(DRIVE, 1, 6, bpb);
 	return bpb;
 }
 
 uint8_t* load_cluster(int clu){
 	uint8_t* cluster_buf = malloc(sizeof(*cluster_buf));
 	uint32_t LBA = FAT_ClusterToLba(clu);
-	ide_read_sectors(DRIVE, g_fat_bpb->sectors_per_cluster, LBA, (uint8_t*)cluster_buf);
 	return cluster_buf;
 }
 
@@ -257,7 +255,6 @@ void fat_init(){
 	g_bytes_per_sector = g_fat_bpb->bytes_per_sector;
 	g_DataSectionLBA = g_fat_bpb->reserved_sector_count + g_fat_bpb->table_size_32 * g_fat_bpb->table_count;
 	root_dir_lba = FAT_ClusterToLba(g_fat_bpb->root_cluster);
-	ide_read_sectors(1, 0, root_dir_lba, g_root_buf);
 	// char* file_buf = fat_read_file("/test/subdir/hello.txt");
 	// printf("\nFile buf: %s\n", file_buf);
 }

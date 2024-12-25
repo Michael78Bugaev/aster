@@ -24,12 +24,12 @@ void kentr(uint32_t magic, struct multiboot_info* boot_info) {
     init_idt();
     init_pit();
     init_dmem();
-    init_chipset();
+    init_chipset(); 
     pci_init();
     ata_init();
     init_vfs();
     start_global_config();
-    ata_init();
+
     printf("\nLocal host name: ");
     char *cusr = scanf();
     strcpy(COMPUTER_NAME, cusr);

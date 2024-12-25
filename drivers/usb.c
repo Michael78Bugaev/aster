@@ -7,7 +7,7 @@
 
 void init_usb() {
     // Инициализация USB контроллера
-    INFO("initiliasing usb devices");
+    INFO("Initiliasing USB devices");
     detect_usb_devices();
 }
 
@@ -44,7 +44,7 @@ void detect_usb_devices() {
                 strncpy(dev->device_name, temp_name, sizeof(dev->device_name) - 1);
                 dev->device_name[sizeof(dev->device_name) - 1] = '\0'; // Обеспечиваем нулевое завершение
 
-                printf("<(0f)>[INFO]:<(07)> usb device dev_id 0x%x name: %s\n", device_id, temp_name);
+                INFO("Found USB device: dev_id: 0x%x, name: %s", device_id, temp_name);
             }
         }
     }

@@ -92,7 +92,6 @@ struct global_variable {
 
 int disk = 0;
 struct global_variable var[];
-IDE_DEVICE _global_ata_devices[2];
 struct multiboot_info* _GLOBAL_MBOOT;
 char current_username[512];
 char COMPUTER_NAME[64];
@@ -105,7 +104,7 @@ void start_global_config();
 void execute_init(const char *filename);
 void DEBUG(uint8_t *msg);
 void INFO(const char* format, ...);
-int add_IDE_to_list(IDE_DEVICE device);
-struct _global_ata_devices *list_ide();
+void ERRORf(const char* format, ...);
+void none(void any0, void any1, void any2, void any3);
 
 #endif

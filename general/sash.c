@@ -79,24 +79,43 @@ void execute_sash(char *arg)
             printf("\n");
             return;
         }
-        else if (strcmp(args[0], "out") == 0)
+        else if (strcmp(args[0], "format") == 0)
         {
-            uint8_t buff[512];
-            ide_read_sectors(disk, 0, 0, buff);
-            for (int i = 0; i < 4096; i++)
-            {
+            // Заполнение всего диска нулями
+            uint8_t buffer[512]; // Буфер для записи
+            memset(buffer, 0, sizeof(buffer)); // Заполняем буфер нуля
+            // Предполагаем, что диск имеет 1024 сектора (это нужно изменить в зависимости от реального размера диска)
+            for (uint32_t lba = 0; lba < 1024; lba++) {
+                ide_write_sectors(disk, 1 + lba, lba, buffer); // Записываем один сектор
+            }
+            printf("format: disk %d formatted successfully.\n", disk);
+        }
+        else if (strcmp(args[0], "sectorin") == 0)
+        {
+            char buffer[512];
+            strcpy(buffer, args[1]);
+            ide_write_sectors(disk, 1, 0, buffer);
+            return;
+        }
+        else if (strcmp(args[0], "sectorout") == 0)
+        {
+            uint8_t buffer[512];
+            ide_read_sectors(disk, 1, 0, buffer);
+            // Печатаем текстовое представление
+            printf(" ");
+            for (int i = 0; i < 1024; i++) {
                 if (i % 64 == 0)
                 {
                     printf("\n");
                 }
-                printf("%c", buff[i]);
+                // Если байт является печатным символом, выводим его, иначе выводим точку
+                if (buffer[i] >= 32 && buffer[i] <= 126) {
+                    printf("%c", buffer[i]);
+                } else {
+                    printf(".");
+                }
             }
-            printf("\n");
-            return;
-        }
-        else if (strcmp(args[0], "in") == 0)
-        {
-            ide_write_sectors(disk, 0, 0, args[1]);
+            printf("\n");                     /**/
             return;
         }
         else if (strcmp(args[0], "cpu") == 0)
@@ -114,7 +133,7 @@ void execute_sash(char *arg)
             }
             else
             {
-                printf("<(0f)>[INFO]:<(07)> KERNEL_EXTERNAL_DISK=%u\n", disk);
+                INFO("disk = %u\n", disk);
             }
             return;
         }
