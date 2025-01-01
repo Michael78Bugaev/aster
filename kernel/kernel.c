@@ -10,6 +10,7 @@
 #include <fs/initrd.h>
 #include <drv/ata.h>
 #include <stdio.h>
+#include <fs/fat32.h>
 #include <string.h>
 #include <drv/pci.h>
 #include <config.h>
@@ -28,12 +29,13 @@ void kentr(uint32_t magic, struct multiboot_info* boot_info) {
     pci_init();
     ata_init();
     init_vfs();
+
     start_global_config();
 
     printf("\nLocal host name: ");
     char *cusr = scanf();
     strcpy(COMPUTER_NAME, cusr);
-    printf("\nLogin: ");
+    printf("Login: ");
     char *usr = scanf();
     strcpy(current_username, usr);
     //vbe_screen_clear(boot_info, 0x0f);

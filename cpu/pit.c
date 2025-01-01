@@ -22,7 +22,7 @@ void inwait(struct InterruptRegisters *regs);
 
 void init_pit()
 {
-    INFO("installing irq 0 for timer");
+    INFO("Installing IRQ 0 for timer");
     ticks = 0;
     target = 0;
     irq_install_handler(0, &pit_handler);

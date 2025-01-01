@@ -81,6 +81,17 @@ Directory* get_root_directory() {
     return root;
 }
 
+void add_IDE_dev(char *dev_type, int drive, uint8_t *data)
+{
+    char *dev_name = "";
+    char *dev_drive;
+    itoa(drive, dev_drive, 2);
+    strcat(dev_name, dev_type);
+    strcat(dev_name, '_');
+    strcat(dev_name, dev_drive);
+    File *device = new_file(dev_name, data, sizeof(data));
+}
+
 Directory* create_directory(const char *path) {
     char *components[128];
     int count = 0;

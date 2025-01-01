@@ -35,6 +35,7 @@ Directory *userfs;
 Directory *sysfs; 
 
 void init_vfs();
+void add_IDE_dev(char *dev_type, int drive, uint8_t *data);
 Directory* find_or_create_directory(const char *path);
 Directory* create_directory(const char *path);
 File* create_file(const char *name, const uint8_t *data, uint32_t size, Directory *dir);

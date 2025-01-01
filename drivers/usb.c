@@ -21,7 +21,7 @@ void detect_usb_devices() {
             uint16_t product_id = (device_id >> 16) & 0xFFFF;
 
             // Проверяем, является ли устройство действительным
-            if (vendor_id != 0xFFFF && product_id != 0xFFFF) {
+            if (vendor_id != 0xFFFF || product_id != 0xFFFF) {
                 usb_device_t *dev = &usb_devices[usb_device_count++];
                 dev->vendor_id = vendor_id;
                 dev->product_id = product_id;

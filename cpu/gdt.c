@@ -16,7 +16,7 @@ void init_gdt()
 {
     _globl_cursor.x = 0;
     _globl_cursor.y = 0;
-    INFO("gdt loading");
+    INFO("GDT Loading");
     gdt_ptr.limit = (sizeof(struct gdt_entry_t) * 6) - 1;
     gdt_ptr.base = (uint32_t)&gdt_entries;
 

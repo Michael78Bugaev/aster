@@ -1,6 +1,7 @@
 #include <drv/ata.h>
 #include <stdio.h>
 #include <io/iotools.h>
+#include <fs/initrd.h>
 #include <string.h>
 #include <config.h>
 
@@ -162,7 +163,7 @@ uint8_t ide_print_error(uint32_t drive, uint8_t err) {
     if (err == 0)
         return err;
 
-    printf("[ERR]: %d:/ ");
+    printf("Warning: %d:/ ", drive);
     if (err == 1) {
         printf("Device Fault\n");
         err = 19;
@@ -201,13 +202,12 @@ uint8_t ide_print_error(uint32_t drive, uint8_t err) {
             err = 13;
         }
     } else if (err == 3) {
-        printf("Reads Nothing\n");
         err = 23;
     } else if (err == 4) {
         printf("Write Protected\n");
         err = 8;
     }
-    printf("[INFO]: [%s %s] %s\n",
+    printf("[%s : %s] %s\n",
            (const char *[]){"Primary", "Secondary"}[g_ide_devices[drive].channel],
            (const char *[]){"Master", "Slave"}[g_ide_devices[drive].drive],
            g_ide_devices[drive].model);
@@ -334,7 +334,10 @@ void ide_init(uint32_t prim_channel_base_addr, uint32_t prim_channel_control_bas
             // printf("  base: 0x%x, control: 0x%x\n", g_ide_channels[i].base, g_ide_channels[i].control);
             // printf("  size: %u sectors, %u bytes\n", g_ide_devices[i].size, g_ide_devices[i].size * ATA_SECTOR_SIZE);
             // printf("  signature: 0x%x, features: %d\n", g_ide_devices[i].signature, g_ide_devices[i].features);
-			printf("[INFO]: %s on drive %d, type %s, %u sectors\n", g_ide_devices[i].model, i, (const char *[]){"ATA", "ATAPI"}[g_ide_devices[i].type], g_ide_devices[i].size);
+			INFO("%s on drive %d, %d sectors", g_ide_devices[i].model, i, g_ide_devices[i].size);
+            //uint8_t *buffer;
+            //ide_write_sectors(i, 1, 0, buffer);
+            //add_IDE_dev((char *[]){"ATA", "ATAPI"}[g_ide_devices[i].type], i, buffer);
         }
 }
 
@@ -478,12 +481,12 @@ void ide_irq() {
 int ide_read_sectors(uint8_t drive, uint8_t num_sectors, uint32_t lba, uint32_t buffer) {
     // 1: Check if the drive presents:
     if (drive > MAXIMUM_IDE_DEVICES || g_ide_devices[drive].reserved == 0) {
-        // printf("\n[ERR]: drive %u not found\n", drive);
+        // ERRORf("Drive %u not found", drive);
         return -1;
     }
     // 2: Check if inputs are valid:
     else if (((lba + num_sectors) > g_ide_devices[drive].size) && (g_ide_devices[drive].type == IDE_ATA)) {
-        printf("[ERR]: LBA address(0x%x) is greater than the available drive sectors(0x%x)\n", lba, g_ide_devices[drive].size);
+        ERRORf("LBA address(0x%x) is greater than the available drive sectors(0x%x)\n", lba, g_ide_devices[drive].size);
         return -2;
     }
     // 3: Read in PIO Mode through Polling & IRQs:
@@ -501,12 +504,12 @@ int ide_read_sectors(uint8_t drive, uint8_t num_sectors, uint32_t lba, uint32_t 
 int ide_write_sectors(uint8_t drive, uint8_t num_sectors, uint32_t lba, uint32_t buffer) {
     // 1: Check if the drive presents:
     if (drive > MAXIMUM_IDE_DEVICES || g_ide_devices[drive].reserved == 0) {
-        printf("[ERR]: drive %u does not exist\n", drive);
+        ERRORf("Drive %u does not exist\n", drive);
         return -1;
     }
     // 2: Check if inputs are valid:
     else if (((lba + num_sectors) > g_ide_devices[drive].size) && (g_ide_devices[drive].type == IDE_ATA)) {
-        printf("[ERR]: LBA address(0x%x) is greater than the available drive sectors(0x%x)\n", lba, g_ide_devices[drive].size);
+        ERRORf("LBA address(0x%x) is greater than the available drive sectors(0x%x)\n", lba, g_ide_devices[drive].size);
         return -2;
     }
     else {
@@ -530,4 +533,9 @@ int ata_get_drive_by_model(const char *model) {
             return i;
     }
     return -1;
+}
+
+IDE_DEVICE* get_device()
+{
+    return &g_ide_devices[0];
 }

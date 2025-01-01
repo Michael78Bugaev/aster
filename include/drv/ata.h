@@ -138,4 +138,6 @@ int ide_write_sectors(uint8_t drive, uint8_t num_sectors, uint32_t lba, uint32_t
 void ata_init();
 int ata_get_drive_by_model(const char *model);
 
+IDE_DEVICE* get_device();
+
 #endif

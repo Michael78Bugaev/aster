@@ -12,7 +12,7 @@ extern void idt_flush(uint32_t);
 
 void init_idt()
 {
-    INFO("installing idt for 0 and 1");
+    INFO("Installing IDT for 0 and 1");
     idt_ptr.limit = sizeof(struct idt_entry_struct) * 256 - 1;
     idt_ptr.base = (uint32_t) &idt_entries;
     memset(&idt_entries, 0, sizeof(struct idt_entry_struct) * 256);
@@ -183,15 +183,16 @@ void isr_handler(struct InterruptRegisters* resgs)
             write('\0', 0x10, offset);
             offset += 2;
         }
+        clear_screen();
         set_cursor(0);
-        printf("<(1f)>\nAn unexpected error occured during running kernel!\n\n"
+        printf("<(0C)>\nAn unexpected error occured during running kernel!\n\n"
 
                      "If you see this message, reboot computer, or contact with kernel developers."
-                   "\nEAX: 0x%x EBX: 0x%x ECX: 0x%x\n"
-                     "CR2: 0x%x EDI: 0x%x ESI: 0x%x\n"
-                     "EDX: 0x%x CSM: 0x%x SS: 0x%x\n"
-                     "ESP: 0x%x EBP: 0x%x EIP: 0x%x\n"
-                     "DS: 0x%x\n\n"
+                   "\nEAX: 0x%8x EBX: 0x%8x ECX: 0x%8x\n"
+                     "CR2: 0x%8x EDI: 0x%8x ESI: 0x%8x\n"
+                     "EDX: 0x%8x CSM: 0x%8x SS : 0x%8x\n"
+                     "ESP: 0x%8x EBP: 0x%8x EIP: 0x%8x\n"
+                     "DS: 0x%8x\n\n"
                  
                       "%s", resgs->eax, resgs->ebx, resgs->ecx, 
                       resgs->cr2, resgs->edi, resgs->esi,
