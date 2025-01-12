@@ -9,9 +9,12 @@ uint32_t pci_size_map[100];
 pci_dev_t dev_zero= {0};
 bool devyes = false;
 
+uint16_t pci_count;
+
 void initialize_and_print_pci_devices();
 uint32_t get_device_class(pci_dev_t dev);
 uint32_t get_device_subclass(pci_dev_t dev);
+char *get_type(uint16_t class, uint16_t subclass);
 
 /*
  * Given a pci device(32-bit vars containing info about bus, device number, and function number), a field(what u want to read from the config space)
@@ -244,18 +247,18 @@ const char* get_device_name(uint16_t vendor_id, uint16_t device_id) {
                 case 0x07A0:
                     if (!devyes)
                     {
-                        return "Vmware PCI Express Root Port";
+                        return "VMware PCI Express Root Port";
                         devyes = true;
                     }
                     break;
                 case 0x07E0:
-                    return "Vmware SATA AHCI controller";
+                    return "VMware SATA AHCI controller";
                     break;
                 case 0x0770:
-                    return "Vmware USB2 EHCI Controller";
+                    return "VMware USB2 EHCI Controller";
                     break;
                 case 0x0774:
-                    return "Vmware USB1.1 UHCI Controller";
+                    return "VMware USB1.1 UHCI Controller";
                     break;
                 default:
                     return "VMware Device";
@@ -478,8 +481,167 @@ void initialize_and_print_pci_devices() {
                 const char* device_name = get_device_name(vendor_id, device_id);
 
                 // Вывод информации об устройстве
-                INFO("PCI [%4x:%4x]: Class: 0x%2x, Subclass: 0x%2x", vendor_id, device_id, class_id, subclass);
+                INFO("PCI [%4x:%4x]: Class: %1x, Subclass: %1x", vendor_id, device_id, class_id, subclass);
+                pci_count++;
             }
         }
+    }
+}
+
+pci_dev_list_t *get_pci_list()
+{
+    for (int i = 0; i < pci_count; i++)
+    {
+        printf("[%4x:%4x] %s\n", devices_t[i].vendor_id, devices_t[i].device_id, get_type(devices_t[i].class_id, devices_t[i].subclass_id));
+    }
+}
+
+char *get_type(uint16_t class, uint16_t subclass) {
+
+    class = class & 0xFF;
+    subclass = subclass & 0xFF;
+
+    switch (class) {
+        case 0x00:
+            return "Unclassified";
+        case 0x01:
+            switch (subclass) {
+                case 0x00: return "SCSI Bus Controller";
+                case 0x01: return "IDE Controller";
+                case 0x02: return "Floppy Disk Controller";
+                case 0x03: return "IPI Bus Controller";
+                case 0x04: return "RAID Controller";
+                case 0x05: return "ATA Controller";
+                case 0x06: return "Serial ATA Controller";
+                case 0x07: return "Serial Attached SCSI (SAS) Controller";
+                case 0x08: return "Non-Volatile Memory Controller (e.g., NVMe)";
+                case 0x80: return "Other Mass Storage Controller";
+                default:   return "Unknown Mass Storage Controller";
+            }
+        case 0x02:
+            switch (subclass) {
+                case 0x00: return "Ethernet Controller";
+                case 0x01: return "Token Ring Controller";
+                case 0x02: return "FDDI Controller";
+                case 0x03: return "ATM Controller";
+                case 0x04: return "ISDN Controller";
+                case 0x05: return "WorldFip Controller";
+                case 0x06: return "PICMG 2.14 Multi Computing Controller";
+                case 0x07: return "InfiniBand Controller";
+                case 0x08: return "Fabric Controller";
+                case 0x80: return "Other Network Controller";
+                default:   return "Unknown Network Controller";
+            }
+        case 0x03:
+            switch (subclass) {
+                case 0x00: return "VGA-Compatible Controller";
+                case 0x01: return "XGA-Compatible Controller";
+                case 0x02: return "3D Controller (Not VGA-Compatible)";
+                case 0x80: return "Other Display Controller";
+                default:   return "Unknown Display Controller";
+            }
+        case 0x04:
+            switch (subclass) {
+                case 0x00: return "Multimedia Video Controller";
+                case 0x01: return "Multimedia Audio Controller";
+                case 0x02: return "Computer Telephony Device";
+                case 0x03: return "Audio Device";
+                case 0x80: return "Other Multimedia Controller";
+                default:   return "Unknown Multimedia Controller";
+            }
+        case 0x05:
+            switch (subclass) {
+                case 0x00: return "RAM Controller";
+                case 0x01: return "Flash Controller";
+                case 0x80: return "Other Memory Controller";
+                default:   return "Unknown Memory Controller";
+            }
+        case 0x06:
+            switch (subclass) {
+                case 0x00: return "Host Bridge";
+                case 0x01: return "ISA Bridge";
+                case 0x02: return "EISA Bridge";
+                case 0x03: return "MCA Bridge";
+                case 0x04: return "PCI-to-PCI Bridge";
+                case 0x05: return "PCMCIA Bridge";
+                case 0x06: return "NuBus Bridge";
+                case 0x07: return "CardBus Bridge";
+                case 0x08: return "RACEway Bridge";
+                case 0x09: return "PCI-to-PCI Bridge (Semi-Transparent)";
+                case 0x0A: return "InfiniBand-to-PCI Host Bridge";
+                case 0x80: return "Other Bridge Device";
+                default:   return "Unknown Bridge Device";
+            }
+        case 0x07:
+            switch (subclass) {
+                case 0x00: return "Serial Controller";
+                case 0x01: return "Parallel Controller";
+                case 0x02: return "Multiport Serial Controller";
+                case 0x03: return "Modem";
+                case 0x04: return "IEEE 488.1/2 (GPIB) Controller";
+                case 0x05: return "Smart Card Controller";
+                case 0x80: return "Other Communication Controller";
+                default:   return "Unknown Communication Controller";
+            }
+        case 0x08:
+            switch (subclass) {
+                case 0x00: return "Base System Peripheral";
+                case 0x01: return "Interrupt Controller";
+                case 0x02: return "DMA Controller";
+                case 0x03: return "Timer";
+                case 0x04: return "RTC Controller";
+                case 0x80: return "Other System Peripheral";
+                default:   return "Unknown System Peripheral";
+            }
+        case 0x09:
+            switch (subclass) {
+                case 0x00: return "I/O Access Controller";
+                case 0x01: return "I/O Controller";
+                case 0x80: return "Other I/O Controller";
+                default:   return "Unknown I/O Controller";
+            }
+        case 0x0A:
+            switch (subclass) {
+                case 0x00: return "Embedded Controller";
+                case 0x80: return "Other Embedded Controller";
+                default:   return "Unknown Embedded Controller";
+            }
+        case 0x0B:
+            switch (subclass) {
+                case 0x00: return "Processor";
+                case 0x01: return "Co-Processor";
+                case 0x80: return "Other Processor";
+                default:   return "Unknown Processor";
+            }
+        case 0x0C:
+            switch (subclass) {
+                case 0x00: return "Serial Bus Controller";
+                case 0x01: return "FireWire (IEEE 1394) Controller";
+                case 0x02: return "USB Controller";
+                case 0x03: return "Bluetooth Controller";
+                case 0x80: return "Other Serial Bus Controller";
+                default:   return "Unknown Serial Bus Controller";
+            }
+        case 0x0D:
+            switch (subclass) {
+                case 0x00: return "Wireless Controller";
+                case 0x80: return "Other Wireless Controller";
+                default:   return "Unknown Wireless Controller";
+            }
+        case 0x0E:
+            switch (subclass) {
+                case 0x00: return "Satellite Communication Controller";
+                case 0x01: return "Broadband Communication Controller";
+                case 0x80: return "Other Communication Controller";
+                default:   return "Unknown Communication Controller";
+            }
+        case 0x0F:
+            switch (subclass) {
+                case 0x00: return "Signal Processing Controller";
+                case 0x80: return "Other Signal Processing Controller";
+                default:   return "Unknown Signal Processing Controller";
+            }
+        default:
+            return "Unknown Device Class";
     }
 }

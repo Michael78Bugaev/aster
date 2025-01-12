@@ -70,6 +70,15 @@ typedef struct {
     const char* name;
 } device_info_t;
 
+typedef struct {
+    uint16_t vendor_id;
+    uint16_t device_id;
+    uint16_t class_id;
+    uint16_t subclass_id;
+} pci_dev_list_t;
+
+pci_dev_list_t *devices_t;
+
 const char* get_vendor_name(uint16_t vendor_id);
 
 // Функция для поиска названия устройства по vendor_id и device_id
@@ -83,6 +92,7 @@ pci_dev_t pci_scan_function(uint16_t vendor_id, uint16_t device_id, uint32_t bus
 pci_dev_t pci_scan_device(uint16_t vendor_id, uint16_t device_id, uint32_t bus, uint32_t device, int device_type);
 pci_dev_t pci_scan_bus(uint16_t vendor_id, uint16_t device_id, uint32_t bus, int device_type);
 pci_dev_t pci_get_device(uint16_t vendor_id, uint16_t device_id, int device_type);
+pci_dev_list_t *get_pci_list();
 void pci_init();
 
 #endif

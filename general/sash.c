@@ -13,6 +13,7 @@
 #include <multiboot.h>
 #include <stdio.h>
 #include <cpu/mem.h>
+#include <drv/pci.h>
 #include <chset/chipset.h>
 #include <config.h>
 #include <vga.h>
@@ -61,6 +62,10 @@ void execute_sash(char *arg)
 
             }
             return;
+        }
+        else if (strcmp(args[0], "lspci") == 0)
+        {
+            get_pci_list();
         }
         else if (strcmp(args[0], "clear") == 0)
         {

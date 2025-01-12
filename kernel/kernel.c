@@ -38,6 +38,8 @@ void kentr(uint32_t magic, struct multiboot_info* boot_info) {
     printf("Login: ");
     char *usr = scanf();
     strcpy(current_username, usr);
+    printf("Welcome to Aster!\n", current_username);
+    printf("<(0f)>This kernel may be content some errors or issues<(07)>, because i'm only\none, who develops this project.\n\nIf you want, you can join to the Aster Operating System\ndevelopment and help me.\n\n");
     //vbe_screen_clear(boot_info, 0x0f);
     // _globl_cursor.x = 0;
     // _globl_cursor.y = 0;
