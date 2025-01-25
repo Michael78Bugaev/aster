@@ -29,9 +29,19 @@ void kentr(uint32_t magic, struct multiboot_info* boot_info) {
     init_chipset(); 
     pci_init();
     init_vfs();
-
+    ata_init();
     start_global_config();
-    ahci_sata_init();
+    kprint("Example usage of ATA driver \n");
+    uint32_t t = chs_to_lba(0, 0, 0);
+    uint16_t data[4] = {1, 2, 3, 3};
+    if(ata_write(t, 1, data, 4)) {
+        kprint("Write error\n");
+    }
+    uint16_t *tmp = ata_read(t, 0);
+    for (int i = 0; i < strlen(tmp); i++)
+    {
+        printf("%4x\n", tmp[i]);
+    }
     sash_shell();
     
 }

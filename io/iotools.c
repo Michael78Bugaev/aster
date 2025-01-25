@@ -1,5 +1,6 @@
 #include <io/iotools.h>
 #include <stdint.h>
+#include <config.h>
 
 unsigned char   port_byte_in(unsigned short port)
 {

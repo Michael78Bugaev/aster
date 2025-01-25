@@ -24,6 +24,28 @@ typedef struct Directory {
     uint32_t dir_count;
 } Directory;
 
+typedef struct vfs_node {
+    // Baisc information about a file(note: in linux, everything is file, so the vfs_node could be used to describe a file, directory or even a device!)
+    char name[256];
+    void * device;
+    uint32_t mask;
+    uint32_t uid;
+    uint32_t gid;
+    uint32_t flags;
+    uint32_t inode_num;
+    uint32_t size;
+    uint32_t fs_type;
+    uint32_t open_flags;
+    // Time
+    uint32_t create_time;
+    uint32_t access_time;
+    uint32_t modified_time;
+
+    uint32_t offset;
+    unsigned nlink;
+    int refcount;
+}vfs_node_t;
+
 Directory *root;
 
 Directory *current_directory;
