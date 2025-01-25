@@ -87,74 +87,27 @@ void execute_sash(char *arg)
         }
         else if (strcmp(args[0], "mkfat32") == 0)
         {
-            IDE_DEVICE* device = get_device();
-            if (!device) { printf("Something went wrong...\n"); return; }
-            if (fat32_format(disk, 1, 128, device->size) != FAT32_SUCCESS)
-            {
-                printf("Error initiliazing FAT32 on drive %d\n", disk);
-                return;
-            }
-            printf("FAT32 initialized on drive %d\n", disk);
+            
         }
         else if (strcmp(args[0], "fat_dir") == 0)
         {
-            DIR_ENTRY_FAT32 *dir;
-            int num_entries = fat32_list_dir(disk, "0:/", dir, 10);
-            if (num_entries > 0) {
-                printf("List of directory:\n");
-                for (int i = 0; i < num_entries; i++) {
-                    char name[12];
-                    memcpy(name, dir[i].DIR_Name, 11);
-                    name[11] = '\0';
-                    printf("%s\n", name);
-                }
-            } else {
-                printf("Ошибка обхода директории\n");
-            }
+            
         }
         else if (strcmp(args[0], "mkext2") == 0)
         {
-            ext2_format(disk, 1024, 128);
+            
         }
         else if (strcmp(args[0], "format") == 0)
         {
-            // Заполнение всего диска нулями
-            uint8_t buffer[512]; // Буфер для записи
-            memset(buffer, 0, sizeof(buffer)); // Заполняем буфер нуля
-            // Предполагаем, что диск имеет 1024 сектора (это нужно изменить в зависимости от реального размера диска)
-            for (uint32_t lba = 0; lba < 1024; lba++) {
-                ide_write_sectors(disk, 1 + lba, lba, buffer); // Записываем один сектор
-            }
-            printf("format: disk %d formatted successfully.\n", disk);
+            
         }
         else if (strcmp(args[0], "in") == 0)
         {
-            char buffer[512];
-            strcpy(buffer, args[3]);
-            ide_write_sectors(disk, atoi(args[1]), atoi(args[2]), buffer);
-            return;
+            
         }
         else if (strcmp(args[0], "out") == 0)
         {
-            uint8_t buffer[512];
-            int num_sectors_to_read = atoi(args[1]);
-            ide_read_sectors(disk, 1, 0, buffer);
-            // Печатаем текстовое представление
-            printf(" ");
-            for (int i = 0; i < num_sectors_to_read; i++) {
-                if (i % 64 == 0)
-                {
-                    printf("\n");
-                }
-                // Если байт является печатным символом, выводим его, иначе выводим точку
-                if (buffer[i] >= 32 && buffer[i] <= 126) {
-                    printf("%c", buffer[i]);
-                } else {
-                    printf(".");
-                }
-            }
-            printf("\n");                     /**/
-            return;
+            
         }
         else if (strcmp(args[0], "cpu") == 0)
         {
@@ -576,7 +529,7 @@ void sash_shell()
     char *command;
     while (1)
     {
-        printf("<(0a)>%s@%s<(0f)>:<(09)>/%s<(07)> &", current_username, COMPUTER_NAME, current_directory->full_name);
+        printf("/%s<(07)> &", current_username, COMPUTER_NAME, current_directory->full_name);
         command = scanf();
         execute_sash(command);
     }

@@ -20,6 +20,7 @@ typedef union pci_dev {
 // Ports
 #define PCI_CONFIG_ADDRESS  0xCF8
 #define PCI_CONFIG_DATA     0xCFC
+#define PCI_BASE_ADDRESS_0 0x10
 
 // Config Address Register
 
