@@ -1,7 +1,6 @@
 #ifndef SEDIT_H
 #define SEDIT_H
 
-#include <fs/file.h>
 #include <stdint.h>
 
 #define MAX_BUFFER_SIZE 1024

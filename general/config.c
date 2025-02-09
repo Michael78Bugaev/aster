@@ -1,6 +1,4 @@
 #include <config.h>
-#include <fs/initrd.h>
-#include <fs/file.h>
 #include <stdint.h>
 #include <drv/vbe.h>
 #include <string.h>
@@ -78,24 +76,11 @@ int get_var_count()
 
 void start_global_config()
 {
-    strcpy(current_directory->name, "/");
-    get_full_cpu_name();
-    _globl_cursor.x = 0; // VBE Cursor X
-    _globl_cursor.y = 0; // VBE Cursor Y
+    get_full_cpu_name();      
 }
 
 void execute_init(const char *filename) {
-    INFO("executing /init as a main script");
-    char init_data[2048];
-    strcpy(init_data, read_file(filename, current_directory));
-    if (contain(init_data, '\n'))
-    {
-
-    }
-    else
-    {
-        execute_sash(init_data);
-    }
+    
 }
 
 void DEBUG(uint8_t *msg)
@@ -118,7 +103,9 @@ void INFO(const char* format, ...) {
     arg++; // Переходим к первому аргументу после format
 
     // Печатаем префикс
-    printf("[  <(0b)>INFO<(07)>  ]: ");
+
+    char log_buf[1024]; // Буфер для логирования
+    int log_len = 0; // Длина логирования
 
     while ((c = *format++) != 0) {
         if (c == '<' && *format == '(') {
@@ -137,6 +124,7 @@ void INFO(const char* format, ...) {
 
         if (c != '%') {
             putchar(c, current_color);
+            log_buf[log_len++] = c; // Добавляем символ в логирование
             continue;
         }
 
@@ -157,6 +145,7 @@ void INFO(const char* format, ...) {
                 int i = 0;
                 if (num < 0) {
                     putchar('-', current_color);
+                    log_buf[log_len++] = '-'; // Добавляем символ в логирование
                     num = -num;
                 }
                 do {
@@ -166,12 +155,15 @@ void INFO(const char* format, ...) {
                 // Выводим число в обратном порядке
                 for (int j = i - 1; j >= 0; j--) {
                     putchar(num_buf[j], current_color);
+                    log_buf[log_len++] = num_buf[j]; // Добавляем символ в логирование
                 }
                 break;
             case 's':
                 str_arg = *(char **)arg++;
                 while (*str_arg) {
-                    putchar(*str_arg++, current_color);
+                    putchar(*str_arg, current_color);
+                    log_buf[log_len++] = *str_arg; // Добавляем символ в логирование
+                    str_arg++;
                 }
                 break;
             case 'x': {
@@ -181,9 +173,11 @@ void INFO(const char* format, ...) {
                 // Добавляем пробелы для выравнивания
                 for (int i = 0; i < width - len; i++) {
                     putchar('0', current_color); // Заполняем нулями
+                    log_buf[log_len++] = '0'; // Добавляем символ в логирование
                 }
                 for (char *ptr = num_buf; *ptr; ptr++) {
                     putchar(*ptr, current_color);
+                    log_buf[log_len++] = *ptr; // Добавляем символ в логирование
                 }
                 break;
             }
@@ -195,19 +189,23 @@ void INFO(const char* format, ...) {
                 // Добавляем пробелы для выравнивания
                 for (int i = 0; i < width - len; i++) {
                     putchar('0', current_color); // Заполняем нулями
+                    log_buf[log_len++] = '0'; // Добавляем символ в логирование
                 }
                 for (char *ptr = num_buf; *ptr; ptr++) {
                     putchar(*ptr, current_color);
+                    log_buf[log_len++] = *ptr; // Добавляем символ в логирование
                 }
                 break;
             }
             case 'c':
                 int_arg = (int *)arg++;
                 putchar((char)(*int_arg), current_color);
+                log_buf[log_len++] = (char)(*int_arg); // Добавляем символ в логирование
                 break;
 
             default:
                 putchar(c, current_color);
+                log_buf[log_len++] = c; // Добавляем символ в логирование
                 break;
         }
     }
@@ -227,7 +225,6 @@ void ERRORf(const char* format, ...)
     arg++; // Переходим к первому аргументу после format
 
     // Печатаем префикс
-    printf("[ <(0c)>ERROR<(07)>  ]: ");
 
     while ((c = *format++) != 0) {
         if (c == '<' && *format == '(') {

@@ -14,7 +14,14 @@
         "usb.h": "c",
         "ata.h": "c",
         "pci.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "device.h": "c",
+        "initrd.h": "c",
+        "sash.h": "c",
+        "ext2.h": "c",
+        "devfs.h": "c",
+        "fat12.h": "c",
+        "cstring": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

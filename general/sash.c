@@ -1,13 +1,9 @@
 #include <sash.h>
 #include <string.h>
 #include <cpu/pit.h>
-#include <fs/file.h>
-#include <fs/initrd.h>
 #include <sedit.h>
 #include <drv/ata.h>
 #include <fs/ext2.h>
-#include <fs/fat32.h>
-#include <fs/dir.h>
 #include <drv/vbe.h>
 #include <config.h>
 #include <multiboot.h>
@@ -24,7 +20,7 @@ void execute_ls(char *path);
 void execute_mkdir(char *name);
 void execute_touch(char *name);
 void execute_cd(char *path);
-void delete_directory_recursively(Directory *dir);
+void delete_directory_recursively();
 void execute_rm(char *name, int recursive, int force);
 void execute_cat(char *name);
 void execute_edit(char *filename);
@@ -65,7 +61,7 @@ void execute_sash(char *arg)
         }
         else if (strcmp(args[0], "lspci") == 0)
         {
-            get_pci_list();
+            //get_pci_list();
         }
         else if (strcmp(args[0], "clear") == 0)
         {
@@ -81,8 +77,7 @@ void execute_sash(char *arg)
         }
         else if (strcmp(args[0], "pwd") == 0)
         {
-            printf(current_directory->full_name);
-            printf("\n");
+            
             return;
         }
         else if (strcmp(args[0], "mkfat32") == 0)
@@ -103,11 +98,21 @@ void execute_sash(char *arg)
         }
         else if (strcmp(args[0], "in") == 0)
         {
-            
+            //ata_pio_write48(0, 0, args[1]);
         }
         else if (strcmp(args[0], "out") == 0)
         {
-            
+            // uint8_t *data;
+            // ata_pio_read28(0, 1, data);
+
+            // for (int i = 0; i < 512; i++)
+            // {
+            //     if (i % 64 == 0)
+            //     {
+            //         printf("\n");
+            //     }
+            //     printf("%c", data[i]);
+            // }
         }
         else if (strcmp(args[0], "cpu") == 0)
         {
@@ -130,80 +135,68 @@ void execute_sash(char *arg)
         }
         else if (strcmp(args[0], "ls") == 0)
         {
-            if (count == 1)
-            {
-                list_directory(current_directory);
-            }
-            else
-            {
-                if (startsWith(args[1], ".") == 0)
-                {
-                    list_directory(current_directory);
-                }
-                else if (startsWith(args[1], "..") == 0)
-                {
-                    if (strcmp(current_directory->name, "/") == 0);
-                    else
-                    {
-                        list_directory(current_directory->parent);
-                    }
-                }
-                else
-                {
+            // if (count == 1)
+            // {
+            //     list_directory(current_directory);
+            // }
+            // else
+            // {
+            //     if (startsWith(args[1], ".") == 0)
+            //     {
+            //         list_directory(current_directory);
+            //     }
+            //     else if (startsWith(args[1], "..") == 0)
+            //     {
+            //         if (strcmp(current_directory->name, "/") == 0);
+            //         else
+            //         {
+            //             list_directory(current_directory->parent);
+            //         }
+            //     }
+            //     else
+            //     {
 
-                }
-            }
+            //     }
+            // }
             return;
         }
         else if (strcmp(args[0], "sedit") == 0) {
-            if (count > 1) {
-                execute_edit(args[1]); // Передаем имя файла в редактор
-            } else {
-                execute_edit(NULL); // Запускаем редактор без загрузки файла
-            }
+            
             return;
         }
         else if (strcmp(args[0], "mkdir") == 0) {
-            if (count > 1) {
-                execute_mkdir(args[1]);
-            } else {
-                printf("Usage: mkdir <directory>\n");
-            }
+            
             return;
         } else if (strcmp(args[0], "touch") == 0) {
-            if (count > 1) {
-                execute_touch(args[1]);
-            } else {
-                printf("Usage: touch <file>\n");
-            }
+            
             return;
         } else if (strcmp(args[0], "rm") == 0) {
-            int recursive = 0;
-            int force = 0;
-            char *target = NULL;
+            // int recursive = 0;
+            // int force = 0;
+            // char *target = NULL;
 
-            for (int i = 1; i < count; i++) {
-                if (strcmp(args[i], "-r") == 0) {
-                    recursive = 1;
-                } else if (strcmp(args[i], "-f") == 0) {
-                    force = 1;
-                } else {
-                    target = args[i];
-                }
-            }
+            // for (int i = 1; i < count; i++) {
+            //     if (strcmp(args[i], "-r") == 0) {
+            //         recursive = 1;
+            //     } else if (strcmp(args[i], "-f") == 0) {
+            //         force = 1;
+            //     } else {
+            //         target = args[i];
+            //     }
+            // }
 
-            if (target) {
-                execute_rm(target, recursive, force);
-            } else {
-                printf("Usage: rm [-r] [-f] <file/directory>\n");
-            }
+            // if (target) {
+            //     execute_rm(target, recursive, force);
+            // } else {
+            //     printf("Usage: rm [-r] [-f] <file/directory>\n");
+            // }
             return;
         } else if (strcmp(args[0], "cat") == 0) {
-            if (count > 1) {
-                execute_cat(args[1]);
-            } else {
-                printf("Usage: cat <file>\n");
-            }
+            // if (count > 1) {
+            //     execute_cat(args[1]);
+            // } else {
+            //     printf("Usage: cat <file>\n");
+            // }
             return;
         }
         else if (strcmp(args[0], "reboot") == 0)
@@ -215,12 +208,12 @@ void execute_sash(char *arg)
             shutdown_system();
         }
         else if (strcmp(args[0], "cd") == 0) {
-            if (count == 1) {
-                printf("Usage: &cd <directory>\n");
-            } else {
-                // Обрабатываем аргумент для cd
-                change_directory(args[1]);
-            }
+            // if (count == 1) {
+            //     printf("Usage: &cd <directory>\n");
+            // } else {
+            //     // Обрабатываем аргумент для cd
+            //     change_directory(args[1]);
+            // }
             return;
         }
         else if (strcmp(args[0], "debug") == 0)
@@ -262,7 +255,7 @@ void execute_sash(char *arg)
                 for (int i = 1; i < count; i++)
                 {
                     struct global_variable* var_found = find_variable(args[i]);
-                    if (var_found != NULL) {
+                    if (var_found == NULL) {
                         // Если переменная найдена, выводим её значение
                         if (var_found->type == TYPE_INT) {
                             kprinti(var_found->data.int_value);
@@ -359,7 +352,7 @@ void execute_sash(char *arg)
             }
             else
             {
-                printf("sash: incorrect command\n");
+                printf("sash: %s: incorrect command\n", args[0]);
                 strnone(arg);
             }
         }
@@ -368,137 +361,31 @@ void execute_sash(char *arg)
 }
 
 void execute_ls(char *path) {
-    Directory *dir = (path && strcmp(path, ".") != 0) ? find_directory(path, current_directory) : current_directory;
-    if (dir) {
-        list_directory(dir);
-    } else {
-        printf("ls: %s: No such directory\n", path);
-    }
+    
 }
 
 void execute_mkdir(char *name) {
-    if (create_directory(name)) {
-    } else {
-        printf("mkdir: error: %s: Directory already exists or failed to create\n", name);
-    }
+    
 }
 
 void execute_touch(char *path) {
-    // Проверяем, что путь не пустой
-    if (path == NULL || strlen(path) == 0) {
-        printf("Usage: touch <file>\n");
-        return;
-    }
-
-    // Находим последнюю '/' в пути
-    char *last_slash = strrchr(path, '/');
-    if (last_slash != NULL) {
-        // Разделяем путь на директорию и имя файла
-        *last_slash = '\0'; // Завершаем строку на месте последнего '/'
-        char *filename = last_slash + 1; // Имя файла
-
-        // Находим или создаем директорию
-        Directory *target_dir = find_or_create_directory(path);
-        if (target_dir == NULL) {
-            printf("Error: Directory not found for path: %s\n", path);
-            return;
-        }
-
-        // Создаем пустой файл в найденной директории
-        File *file = create_file(filename, NULL, 0, target_dir);
-        if (file) {
-            printf("File created: %s/%s\n", path, filename);
-        } else {
-            printf("Error: Failed to create file %s\n", filename);
-        }
-    } else {
-        // Если '/' не найден, создаем файл в текущей директории
-        File *file = create_file(path, NULL, 0, current_directory);
-        if (file) {
-            printf("File created: %s\n", path);
-        } else {
-            printf("Error: Failed to create file %s\n", path);
-        }
-    }
+    
 }
 
 void execute_cd(char *path) {
     
 }
 
-void delete_directory_recursively(Directory *dir) {
-    for (uint32_t i = 0; i < dir->file_count; i++) {
-        mfree(dir->files[i]->data);
-        mfree(dir->files[i]);
-    }
-    for (uint32_t i = 0; i < dir->dir_count; i++) {
-        delete_directory_recursively(dir->subdirs[i]);
-        mfree(dir->subdirs[i]);
-    }
+void delete_directory_recursively() {
+    
 }
 
 void execute_rm(char *name, int recursive, int force) {
-    Directory *target_dir = find_directory(name, current_directory);
-    if (target_dir) {
-        if (recursive) {
-            delete_directory_recursively(target_dir);
-        } else {
-            printf("rm: %s: directory is not empty, use -r to remove\n", name);
-        }
-    } else {
-        File *file = find_file(name, current_directory);
-        if (file) {
-            delete_file(name, current_directory);
-            printf("File removed: %s\n", name);
-        } else {
-            printf("rm: %s: no such file or directory\n", name);
-        }
-    }
+    
 }  
 
 void execute_cat(char *name) {
-    // Копируем путь для обработки
-    char *path_copy = strdup(name);
-    char *token = strtok(path_copy, "/");
-    Directory *current_dir = root; // Начинаем с корневой директории
-
-    // Обработка полного пути
-    while (token != NULL) {
-        // Проверяем, является ли это последним токеном
-        if (strtok(NULL, "/") == NULL) {
-            // Мы находимся на последнем элементе, который должен быть файлом
-            File *file = find_file(token, current_dir);
-            if (file) {
-                // Проверяем, что это действительно файл
-                if (file->data != NULL) {
-                    for (uint32_t i = 0; i < file->size; i++) {
-                        putchar(file->data[i], 0x07); // Выводим каждый байт
-                    }
-                    putchar('\n', 0x07); // Переход на новую строку после вывода
-                } else {
-                    printf("cat: %s: File is empty\n", name);
-                }
-                mfree(path_copy);
-                return;
-            } else {
-                printf("cat: %s: No such file\n", name);
-                mfree(path_copy);
-                return;
-            }
-        } else {
-            // Если это не последний токен, ищем директорию
-            Directory *next_dir = find_directory(token, current_dir);
-            if (next_dir == NULL) {
-                printf("cat: %s: No such file\n", name);
-                mfree(path_copy);
-                return;
-            }
-            current_dir = next_dir; // Переходим в подкаталог
-        }
-        token = strtok(NULL, "/");
-    }
-
-    mfree(path_copy);
+    
 }
 
 void execute_edit(char *filename) {
@@ -529,7 +416,7 @@ void sash_shell()
     char *command;
     while (1)
     {
-        printf("/%s<(07)> &", current_username, COMPUTER_NAME, current_directory->full_name);
+        printf(" &");
         command = scanf();
         execute_sash(command);
     }

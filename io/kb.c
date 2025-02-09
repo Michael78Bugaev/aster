@@ -2,9 +2,7 @@
 #include <io/iotools.h>
 #include <vga.h>
 #include <stdio.h>
-#include <fs/initrd.h>
 #include <config.h>
-#include <fs/dir.h>
 #include <drv/vbe.h>
 #include <multiboot.h>
 #include <sash.h>

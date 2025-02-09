@@ -2,6 +2,7 @@
 #define CONFIG_H
 #include <stdint.h>
 #include <drv/ata.h>
+#include <fs/vfs.h>
 #include <multiboot.h>
 
 
@@ -95,6 +96,9 @@ struct global_variable var[];
 struct multiboot_info* _GLOBAL_MBOOT;
 char current_username[512];
 char COMPUTER_NAME[64];
+char *system_log_file_data;
+
+vfs_info_t* GLOBAL_VIRTUAL_FILESYSTEM;
 
 struct global_variable* find_variable(const char *name);
 void init_variable(const char *name, const char *value, int type);
@@ -106,5 +110,19 @@ void DEBUG(uint8_t *msg);
 void INFO(const char* format, ...);
 void ERRORf(const char* format, ...);
 void none(void any0, void any1, void any2, void any3);
+
+#define LO32(addr64) (uint32_t) (addr64 & 0x00000000FFFFFFFF)
+  #define HI32(addr64) (uint32_t)((addr64 & 0xFFFFFFFF00000000) >> 32)
+
+  // Break up a 32 bits word into hi and lo 16
+  #define LO16(addr32) (uint16_t) (addr32 & 0x0000FFFF)
+  #define HI16(addr32) (uint16_t)((addr32 & 0xFFFF0000) >> 16)
+
+  // Break up a 16 bits word into hi and lo 8
+  #define LO8(addr16) (uint8_t) (addr16 & 0x00FF)
+  #define HI8(addr16) (uint8_t)((addr16 & 0xFF00) >> 8)
+
+  // Creates a selector from a descriptor plus the flags
+  #define SEL(descr,flags) (uint32_t)((descr<<3)+flags)
 
 #endif

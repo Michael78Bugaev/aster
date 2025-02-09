@@ -190,3 +190,7 @@ void int86(uint8_t int_num, regs_t *regs) {
     //     : "eax", "ebx", "ecx", "edx", "esi", "edi", "ebp"
     // );
 }
+
+void insl (uint32_t addr, uint32_t buffer, uint32_t count) {
+  __asm__ __volatile__ ("cld; rep; insl" :: "D" (buffer), "d" (addr), "c" (count));
+}

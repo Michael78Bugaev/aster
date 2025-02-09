@@ -39,5 +39,6 @@ void outportl(uint16_t _port, uint32_t _data);
 uint16_t inports(uint16_t _port);
 void outports(uint16_t _port, uint16_t _data);
 void int86(uint8_t int_num, regs_t *regs);
+void insl (uint32_t addr, uint32_t buffer, uint32_t count);
 
 #endif

@@ -1,647 +1,177 @@
-#include <drv/pci.h>
-#include <string.h>
+/******************************************************************************
+ *
+ *  File        : pci.c
+ *  Description :
+ *
+ *
+ *****************************************************************************/
+#include <stdint.h>
+#include <cpu/mem.h>
+#include <io/iotools.h>
 #include <stdio.h>
 #include <config.h>
-#include <io/iotools.h>
-#include <stdbool.h>
+#include <drv/pci.h>
 
-uint32_t pci_size_map[100];
-pci_dev_t dev_zero= {0};
-bool devyes = false;
+pci_device_t pci_list[PCI_MAX_DEVICES];     // TODo: Should be a Linked list.
 
-uint16_t pci_count;
 
-void initialize_and_print_pci_devices();
-uint32_t get_device_class(pci_dev_t dev);
-uint32_t get_device_subclass(pci_dev_t dev);
-char *get_type(uint16_t class, uint16_t subclass);
-
-/*
- * Given a pci device(32-bit vars containing info about bus, device number, and function number), a field(what u want to read from the config space)
- * Read it for me !
- * */
-uint32_t pci_read(pci_dev_t dev, uint32_t field) {
-	// Only most significant 6 bits of the field
-	dev.field_num = (field & 0xFC) >> 2;
-	dev.enable = 1;
-	outportl(PCI_CONFIG_ADDRESS, dev.bits);
-
-	// What size is this field supposed to be ?
-	uint32_t size = pci_size_map[field];
-	if(size == 1) {
-		// Get the first byte only, since it's in little endian, it's actually the 3rd byte
-		uint8_t t =port_byte_in(PCI_CONFIG_DATA + (field & 3));
-		return t;
-	}
-	else if(size == 2) {
-		uint16_t t = inports(PCI_CONFIG_DATA + (field & 2));
-		return t;
-	}
-	else if(size == 4){
-		// Read entire 4 bytes
-		uint32_t t = inportl(PCI_CONFIG_DATA);
-		return t;
-	}
-	return 0xffff;
+uint16_t pci_config_get_word (pci_device_t *dev, int offset) {
+  uint16_t *cs = (uint16_t *)&dev->config_space[offset];
+  return *cs;
+}
+uint8_t pci_config_get_byte (pci_device_t *dev, int offset) {
+  return (uint8_t)dev->config_space[offset];
+}
+uint32_t pci_config_get_dword (pci_device_t *dev, int offset) {
+  uint32_t *cs = (uint32_t *)&dev->config_space[offset];
+  return *cs;
 }
 
-/*
- * Write pci field
- * */
-void pci_write(pci_dev_t dev, uint32_t field, uint32_t value) {
-	dev.field_num = (field & 0xFC) >> 2;
-	dev.enable = 1;
-	// Tell where we want to write
-	outportl(PCI_CONFIG_ADDRESS, dev.bits);
-	// Value to write
-	outportl(PCI_CONFIG_DATA, value);
+
+/**
+ *
+ */
+uint16_t pci_readword (uint16_t bus, uint16_t slot, uint16_t func, uint16_t offset) {
+  uint32_t address = 0x80000000; // Bit 31 set
+  address |= (uint32_t)bus << 16;
+  address |= (uint32_t)slot << 11;
+  address |= (uint32_t)func << 8;
+  address |= (uint32_t)offset & 0xfc;
+
+  outportl(PCI_CONFIG_ADDRESS, address);
+  uint32_t ret = inportl (PCI_CONFIG_DATA);
+
+  ret = ret >> ( (offset & 2) * 8) & 0xffff;
+  return ret;
 }
 
-/*
- * Get device type (i.e, is it a bridge, ide controller ? mouse controller? etc)
- * */
-uint32_t get_device_type(pci_dev_t dev) {
-	uint32_t t = pci_read(dev, PCI_CLASS) << 8;
-	return t | pci_read(dev, PCI_SUBCLASS);
+/**
+ *
+ */
+int pci_get_next_free_slot () {
+  int i;
+
+  for (i=0; i!=PCI_MAX_DEVICES; i++) {
+    if (! pci_list[i].enabled) return i;
+  }
+  return -1;
 }
 
-uint32_t get_device_class(pci_dev_t dev)
-{
-    return pci_read(dev, PCI_CLASS);
-}
-uint32_t get_device_subclass(pci_dev_t dev)
-{
-    return pci_read(dev, PCI_SUBCLASS);
-}
+/**
+ * Returns next PCI-device. On first call, *dev is NULL. Feed next device into dev to iterate
+ * the list. Returns NULL on end (or nothing found). subclass is optional and can be -1
+ */
+pci_device_t *pci_find_next_class (pci_device_t *dev, int class, int subclass) {
+  // Temp device is beginning of list or the next device when one is given in *dev
+  pci_device_t *tmp = (dev == NULL) ? &pci_list[0] : &pci_list[dev->index+1];
 
-/*
- * Get secondary bus from a PCI bridge device
- * */
-uint32_t get_secondary_bus(pci_dev_t dev) {
-	return pci_read(dev, PCI_SECONDARY_BUS);
-}
+  while (1) { // Scary, should be linked lists!
+//    kprintf ("FNC: %d\n", tmp->index);
+    if (class == -1 || tmp->class == class) {
+      // Subclass is optional
+      if (subclass == -1 || tmp->subclass == subclass) {
+        // Only return when this slot is enabled
+        if (tmp->enabled) return tmp;
+      }
+    }
 
-/*
- * Is current device an end point ? PCI_HEADER_TYPE 0 is end point
- * */
-uint32_t pci_reach_end(pci_dev_t dev) {
-	uint32_t t = pci_read(dev, PCI_HEADER_TYPE);
-	return !t;
-}
+    // Found end of line
+    if (tmp->index == PCI_MAX_DEVICES-1) return NULL;
 
-/*
- * The following three functions are basically doing recursion, enumerating each and every device connected to pci
- * We start with the primary bus 0, which has 8 function, each of the function is actually a bus
- * Then, each bus can have 8 devices connected to it, each device can have 8 functions
- * When we gets to enumerate the function, check if the vendor id and device id match, if it does, we've found our device !
- **/
+    // Get next entry
+    tmp = &pci_list[tmp->index+1];
+  }
 
-/*
- * Scan function
- * */
-pci_dev_t pci_scan_function(uint16_t vendor_id, uint16_t device_id, uint32_t bus, uint32_t device, uint32_t function, int device_type) {
-	pci_dev_t dev = {0};
-	dev.bus_num = bus;
-	dev.device_num = device;
-	dev.function_num = function;
-	// If it's a PCI Bridge device, get the bus it's connected to and keep searching
-	if(get_device_type(dev) == PCI_TYPE_BRIDGE) {
-		pci_scan_bus(vendor_id, device_id, get_secondary_bus(dev), device_type);
-	}
-	// If type matches, we've found the device, just return it
-	if(device_type == -1 || device_type == get_device_type(dev)) {
-		uint32_t devid  = pci_read(dev, PCI_DEVICE_ID);
-		uint32_t vendid = pci_read(dev, PCI_VENDOR_ID);
-		if(devid == device_id && vendor_id == vendid)
-			return dev;
-	}
-	return dev_zero;
+  // Should not come here
+  return NULL;
 }
 
-/*
- * Scan device
- * */
-pci_dev_t pci_scan_device(uint16_t vendor_id, uint16_t device_id, uint32_t bus, uint32_t device, int device_type) {
-	pci_dev_t dev = {0};
-	dev.bus_num = bus;
-	dev.device_num = device;
+/**
+ * Returns next PCI-device. On first call, *dev is NULL. Feed next device into dev to iterate
+ * the list. Returns NULL on end (or nothing found). subclass is optional and can be -1
+ */
+pci_device_t *pci_find_next_position (pci_device_t *dev, int bus, int slot, int func) {
+  // Temp device is beginning of list or the next device when one is given in *dev
+  pci_device_t *tmp = (dev == NULL) ? &pci_list[0] : &pci_list[dev->index+1];
 
-	if(pci_read(dev,PCI_VENDOR_ID) == PCI_NONE)
-		return dev_zero;
-
-	pci_dev_t t = pci_scan_function(vendor_id, device_id, bus, device, 0, device_type);
-	if(t.bits)
-		return t;
-
-	if(pci_reach_end(dev))
-		return dev_zero;
-
-	for(int function = 1; function < FUNCTION_PER_DEVICE; function++) {
-		if(pci_read(dev,PCI_VENDOR_ID) != PCI_NONE) {
-			t = pci_scan_function(vendor_id, device_id, bus, device, function, device_type);
-			if(t.bits)
-				return t;
-		}
-	}
-	return dev_zero;
-}
-/*
- * Scan bus
- * */
-pci_dev_t pci_scan_bus(uint16_t vendor_id, uint16_t device_id, uint32_t bus, int device_type) {
-	for(int device = 0; device < DEVICE_PER_BUS; device++) {
-		pci_dev_t t = pci_scan_device(vendor_id, device_id, bus, device, device_type);
-		if(t.bits)
-			return t;
-	}
-	return dev_zero;
-}
-
-/*
- * Device driver use this function to get its device object(given unique vendor id and device id)
- * */
-pci_dev_t pci_get_device(uint16_t vendor_id, uint16_t device_id, int device_type) {
-
-	pci_dev_t t = pci_scan_bus(vendor_id, device_id, 0, device_type);
-	if(t.bits)
-		return t;
-
-	// Handle multiple pci host controllers
-
-	if(pci_reach_end(dev_zero)) {
-		INFO("PCI det device failed");
-	}
-	for(int function = 1; function < FUNCTION_PER_DEVICE; function++) {
-		pci_dev_t dev = {0};
-		dev.function_num = function;
-
-		if(pci_read(dev, PCI_VENDOR_ID) == PCI_NONE)
-			break;
-		t = pci_scan_bus(vendor_id, device_id, function, device_type);
-		if(t.bits)
-			return t;
-	}
-	return dev_zero;
-}
-
-/*
- * PCI Init, filling size for each field in config space
- * */
-void pci_init() {
-	// Init size map
-	pci_size_map[PCI_VENDOR_ID] =	2;
-	pci_size_map[PCI_DEVICE_ID] =	2;
-	pci_size_map[PCI_COMMAND]	=	2;
-	pci_size_map[PCI_STATUS]	=	2;
-	pci_size_map[PCI_SUBCLASS]	=	1;
-	pci_size_map[PCI_CLASS]		=	1;
-	pci_size_map[PCI_CACHE_LINE_SIZE]	= 1;
-	pci_size_map[PCI_LATENCY_TIMER]		= 1;
-	pci_size_map[PCI_HEADER_TYPE] = 1;
-	pci_size_map[PCI_BIST] = 1;
-	pci_size_map[PCI_BAR0] = 4;
-	pci_size_map[PCI_BAR1] = 4;
-	pci_size_map[PCI_BAR2] = 4;
-	pci_size_map[PCI_BAR3] = 4;
-	pci_size_map[PCI_BAR4] = 4;
-	pci_size_map[PCI_BAR5] = 4;
-	pci_size_map[PCI_INTERRUPT_LINE]	= 1;
-	pci_size_map[PCI_SECONDARY_BUS]		= 1;
-    initialize_and_print_pci_devices();
-}
-
-// Таблица производителей
-vendor_info_t vendors[] = {
-    {0x8086, "Intel"},
-    {0x10DE, "NVIDIA"},
-    {0x1022, "AMD"},
-    {0x1B36, "Realtek"},
-    // Добавь сюда еще производителей, если надо
-};
-
-// Таблица устройств
-device_info_t devices[] = {
-    {0x8086, 0x1234, "Intel Device 1234"},
-    {0x10DE, 0x1C82, "NVIDIA GeForce GTX 1080"},
-    {0x1022, 0x2000, "AMD Device 2000"},
-    // Добавь сюда еще устройства, если надо
-};
-
-// Функция для поиска названия производителя по vendor_id
-const char* get_vendor_name(uint16_t vendor_id) {
-    for (int i = 0; i < sizeof(vendors) / sizeof(vendor_info_t); i++) {
-        if (vendors[i].vendor_id == vendor_id) {
-            return vendors[i].name;
+  while (1) { // Scary, should be linked lists!
+    if (bus == -1 || tmp->bus == bus) {
+      if (slot == -1 || tmp->slot == slot) {
+        if (func == -1 || tmp->func == func) {
+          // Only return when this slot is enabled
+          if (tmp->enabled) return tmp;
         }
+      }
     }
-    return "Unknown Vendor";
+
+    // Found end of line
+    if (tmp->index == PCI_MAX_DEVICES-1) return NULL;
+
+    // Get next entry
+    tmp = &pci_list[tmp->index+1];
+  }
+
+  // Should not come here
+  return NULL;
 }
 
-// Функция для поиска названия устройства по vendor_id и device_id
-const char* get_device_name(uint16_t vendor_id, uint16_t device_id) {
-    switch (vendor_id)
-    {
-        case 0x15AD: // Vmware
-            switch (device_id)
-            {
-                case 0x07A0:
-                    if (!devyes)
-                    {
-                        return "VMware PCI Express Root Port";
-                        devyes = true;
-                    }
-                    break;
-                case 0x07E0:
-                    return "VMware SATA AHCI controller";
-                    break;
-                case 0x0770:
-                    return "VMware USB2 EHCI Controller";
-                    break;
-                case 0x0774:
-                    return "VMware USB1.1 UHCI Controller";
-                    break;
-                default:
-                    return "VMware Device";
-                    break;
-            }
-            break;
-        case 0x8086: // Integrated Electronics (Intel)
-            switch (device_id)
-            {
-                case 0x1237:
-                    return "Intel 440FX - 82441FX PMC [Natoma]";
-                    break;
-                case 0x7000:
-                    return "Intel 82371SB PIIX3 ISA [Natoma/Triton II]";
-                    break;
-                case 0x7010:
-                    return "Intel 82371SB PIIX3 IDE [Natoma/Triton II]";
-                    break;
-                case 0x7113:
-                    return "Intel 82371AB/EB/MB PIIX4 ACPI";
-                    break;
-                case 0x100E:
-                    return "Intel 82540EM Gigabit Ethernet Controller";
-                    break;
-                case 0xA000:
-                    return "Intel Atom Processor D4xx/D5xx/N4xx/N5xx DMI Bridge";
-                    break;
-                case 0xA001:
-                    return "Intel Atom Processor D4xx/D5xx/N4xx/N5xx Integrated Graphics Controller";
-                    break;
-                case 0x27D8:
-                    return "Intel NM10/ICH7 Family High Definition Audio Controller";
-                    break;
-                case 0x27D0:
-                    return "Intel NM10/ICH7 Family PCI Express Port 1";
-                    break;
-                case 0x27D2:
-                    return "Intel NM10/ICH7 Family PCI Express Port 2";
-                    break;
-                case 0x27D4:
-                    return "Intel NM10/ICH7 Family PCI Express Port 3";
-                    break;
-                case 0x27D6:
-                    return "Intel NM10/ICH7 Family PCI Express Port 4";
-                    break;
-                case 0x27C8:
-                    return "Intel NM10/ICH7 Family USB UHCI Controller #1";
-                    break;
-                case 0x27C9:
-                    return "Intel NM10/ICH7 Family USB UHCI Controller #2";
-                    break;
-                case 0x27CA:
-                    return "Intel NM10/ICH7 Family USB UHCI Controller #3";
-                    break;
-                case 0x27CB:
-                    return "Intel NM10/ICH7 Family USB UHCI Controller #4";
-                    break;
-                case 0x27CC:
-                    return "Intel NM10/ICH7 Family USB2 EHCI Controller";
-                    break;
-                case 0x2448:
-                    return "Intel 82801 Mobile PCI Bridge";
-                    break;
-                case 0x27BC:
-                    return "Intel NM10 Family LPC Controller";
-                    break;
-                case 0x27C1:
-                    return "Intel NM10/ICH7 Family SATA Controller [AHCI mode]";
-                    break;
-                case 0x27DA:
-                    return "Intel NM10/ICH7 Family SMBus Controller";
-                    break;
-                
-                default:
-                    return "Intel Device";
-                    break;
-            }
-            break;
-        case 0x1002: // AMD/ATI
-            switch (device_id)
-            {
-                case 0x4391:
-                    return "AMD/ATI SB7x0/SB8x0/SB9x0 SATA Controller [AHCI mode]";
-                    break;
-                case 0x4398:
-                    return "AMD/ATI SB7x0 USB OHCI1 Controller";
-                    break;
-                case 0x4396:
-                    return "AMD/ATI SB7x0/SB8x0/SB9x0 USB EHCI Controller";
-                    break;
-                case 0x4397:
-                    return "AMD/ATI SB7x0/SB8x0/SB9x0 USB OHCI0 Controller";
-                    break;
-                case 0x4385:
-                    return "AMD/ATI SBx00 SMBus Controller";
-                    break;
-                case 0x4383:
-                    return "AMD/ATI SBx00 Azalia (Intel HDA)";
-                    break;
-                case 0x439D:
-                    return "AMD/ATI SB7x0/SB8x0/SB9x0 LPC host controller";
-                    break;
-                case 0x4384:
-                    return "SBx00 PCI to PCI Bridge";
-                    break;
-                case 0x4399:
-                    return "AMD/ATI SB7x0/SB8x0/SB9x0 USB OHCI2 Controller";
-                    break;
-                case 0x9600:
-                    return "AMD RS780 Host Bridge";
-                    break;
-                case 0x9602:
-                    return "AMD RS780/RS880 PCI to PCI bridge (int gfx)";
-                    break;
-                case 0x9604:
-                    return "AMD RS780/RS880 PCI to PCI bridge (PCIE port 0)";
-                    break;
-                case 0x9605:
-                    return "AMD RS780/RS880 PCI to PCI bridge (PCIE port 1)";
-                    break;
-                case 0x9607:
-                    return "AMD RS780/RS880 PCI to PCI bridge (PCIE port 3)";
-                    break;
-                case 0x9608:
-                    return "AMD RS780/RS880 PCI to PCI bridge (PCIE port 4)";
-                    break;
-                default:
-                    return "AMD Device";
-                    break;
-            }
-            break;
-        case 0x1022: // Advanced Micro Controllers (AMD)
-            switch (device_id)
-            {
-                case 0x2000:
-                    return "AMD 79c970 (PCnet32 LANCE)";
-                    break;
-                case 0x1300:
-                    return "AMD Family CPU HyperTransport Configuration";
-                    break;
-                case 0x1301:
-                    return "AMD Family 11h Processor Address Map";
-                    break;
-                case 0x1302:
-                    return "AMD Family 11h Processor DRAM Controller";
-                    break;
-                case 0x1303:
-                    return "AMD Family 11h Processor Miscellaneous Control";
-                    break;
-                case 0x1304:
-                    return "AMD Family 11h Processor Link Control";
-                    break;
-                
-                default:
-                    return "AMD Device";
-                    break;
-            }
-            break;
-        
-        case 0x14E4: // Broadcom
-            switch (device_id)
-            {
-                case 0x1693:
-                    return "NetLink BCM5787M Gigabit Ethernet PCI Express";
-                    break;
-            
-                default:
-                    return "Broadcom Device";
-                    break;
-            }
-            break;
-            case 0x11C1: // LSI (Broadcom)
-                switch (device_id)
-                {
-                    case 0x5811:
-                        return "LSI (Broadcom) NetLink BCM5787M Gigabit Ethernet PCI Express";
-                        break; 
-                    default:
-                        return "LSI (Broadcom) Device";
-                        break;
-                }
-            break;
-        default:
-            return "Unknown Device";
-            break;
-    }
-}
+/**
+ *
+ */
+void pci_init (void) {
+  int bus,slot,func;
 
-void initialize_and_print_pci_devices() {
-    pci_dev_t dev;
-    uint16_t vendor_id, device_id, class_id;
+  // Clear list
+  memset (&pci_list, 0, sizeof (pci_list));
 
-    // Сканируем все шины, устройства и функции
-    for (uint32_t bus = 0; bus < 256; bus++) {
-        for (uint32_t device = 0; device < 32; device++) {
-            for (uint32_t function = 0; function < 8; function++) {
-                dev.bus_num = bus;
-                dev.device_num = device;
-                dev.function_num = function;
+  // Indices MUST be set correctly, even for non-enabled entries
+  int i;
+  for (i=0; i!=PCI_MAX_DEVICES; i++) pci_list[i].index = i;
 
-                // Считываем vendor ID
-                vendor_id = pci_read(dev, PCI_VENDOR_ID);
-                
-                // Проверяем, существует ли устройство
-                if (vendor_id == 0x00FF || vendor_id == 0xFFFF) {
-                    continue; // Устройство не существует, переходим к следующему
-                }
+  // Scan all buses, slots and functions
+  for (bus=0; bus != PCI_MAX_BUS; bus++) {
+    for (slot=0; slot != PCI_MAX_SLOT; slot++) {
+      uint16_t vendor = pci_readword (bus, slot, 0, 0);
+      if (vendor == 0xFFFF) continue;  // Nothing on this slot
 
-                // Считываем device ID
-                device_id = pci_read(dev, PCI_DEVICE_ID);
-                
-                // Проверяем, действительно ли устройство активно
-                if (device_id == 0x00FF || vendor_id == 0xFFFF) {
-                    continue; // Если device ID невалиден, пропускаем
-                }
+      for (func=0; func != PCI_MAX_FUNC; func++) {
 
-                // Считываем class ID
-                class_id = get_device_class(dev);
-                uint32_t subclass = get_device_subclass(dev);
-                const char* device_name = get_device_name(vendor_id, device_id);
+        // Read additional info
+        uint16_t device = pci_readword (bus, slot, func, 2);
+        if (device == 0xFFFF) continue;  // Nothing on this slot
 
-                // Вывод информации об устройстве
-                INFO("PCI [%4x:%4x]: Class: %1x, Subclass: %1x", vendor_id, device_id, class_id, subclass);
-                pci_count++;
-            }
+        // Find free slot
+        int idx = pci_get_next_free_slot ();
+        if (idx == -1) printf("PCI: no more free slots!\n");
+
+        // Fill config space
+        int i;
+        for (i=0; i!=128; i++) {
+          uint16_t tmp = pci_readword (bus, slot, func, i*2);
+          pci_list[idx].config_space[i*2+0] = LO8(tmp);
+          pci_list[idx].config_space[i*2+1] = HI8(tmp);
         }
-    }
-}
 
-pci_dev_list_t *get_pci_list()
-{
-    for (int i = 0; i < pci_count; i++)
-    {
-        printf("[%4x:%4x] %s\n", devices_t[i].vendor_id, devices_t[i].device_id, get_type(devices_t[i].class_id, devices_t[i].subclass_id));
-    }
-}
+        pci_device_t *dev = &pci_list[idx];
 
-char *get_type(uint16_t class, uint16_t subclass) {
+        pci_list[idx].class = pci_config_get_byte (dev, 0x0B);
+        pci_list[idx].subclass = pci_config_get_byte (dev, 0x0A);
+        pci_list[idx].vendor_id = pci_config_get_word (dev, 0x00);
+        pci_list[idx].device_id = pci_config_get_word (dev, 0x02);
+        pci_list[idx].bus = bus;
+        pci_list[idx].slot = slot;
+        pci_list[idx].func = func;
 
-    class = class & 0xFF;
-    subclass = subclass & 0xFF;
+        printf("Added slot %d with %4x:%4x [%2x:%2x]\n", idx, pci_list[idx].vendor_id, pci_list[idx].device_id, pci_list[idx].class, pci_list[idx].subclass);
 
-    switch (class) {
-        case 0x00:
-            return "Unclassified";
-        case 0x01:
-            switch (subclass) {
-                case 0x00: return "SCSI Bus Controller";
-                case 0x01: return "IDE Controller";
-                case 0x02: return "Floppy Disk Controller";
-                case 0x03: return "IPI Bus Controller";
-                case 0x04: return "RAID Controller";
-                case 0x05: return "ATA Controller";
-                case 0x06: return "Serial ATA Controller";
-                case 0x07: return "Serial Attached SCSI (SAS) Controller";
-                case 0x08: return "Non-Volatile Memory Controller (e.g., NVMe)";
-                case 0x80: return "Other Mass Storage Controller";
-                default:   return "Unknown Mass Storage Controller";
-            }
-        case 0x02:
-            switch (subclass) {
-                case 0x00: return "Ethernet Controller";
-                case 0x01: return "Token Ring Controller";
-                case 0x02: return "FDDI Controller";
-                case 0x03: return "ATM Controller";
-                case 0x04: return "ISDN Controller";
-                case 0x05: return "WorldFip Controller";
-                case 0x06: return "PICMG 2.14 Multi Computing Controller";
-                case 0x07: return "InfiniBand Controller";
-                case 0x08: return "Fabric Controller";
-                case 0x80: return "Other Network Controller";
-                default:   return "Unknown Network Controller";
-            }
-        case 0x03:
-            switch (subclass) {
-                case 0x00: return "VGA-Compatible Controller";
-                case 0x01: return "XGA-Compatible Controller";
-                case 0x02: return "3D Controller (Not VGA-Compatible)";
-                case 0x80: return "Other Display Controller";
-                default:   return "Unknown Display Controller";
-            }
-        case 0x04:
-            switch (subclass) {
-                case 0x00: return "Multimedia Video Controller";
-                case 0x01: return "Multimedia Audio Controller";
-                case 0x02: return "Computer Telephony Device";
-                case 0x03: return "Audio Device";
-                case 0x80: return "Other Multimedia Controller";
-                default:   return "Unknown Multimedia Controller";
-            }
-        case 0x05:
-            switch (subclass) {
-                case 0x00: return "RAM Controller";
-                case 0x01: return "Flash Controller";
-                case 0x80: return "Other Memory Controller";
-                default:   return "Unknown Memory Controller";
-            }
-        case 0x06:
-            switch (subclass) {
-                case 0x00: return "Host Bridge";
-                case 0x01: return "ISA Bridge";
-                case 0x02: return "EISA Bridge";
-                case 0x03: return "MCA Bridge";
-                case 0x04: return "PCI-to-PCI Bridge";
-                case 0x05: return "PCMCIA Bridge";
-                case 0x06: return "NuBus Bridge";
-                case 0x07: return "CardBus Bridge";
-                case 0x08: return "RACEway Bridge";
-                case 0x09: return "PCI-to-PCI Bridge (Semi-Transparent)";
-                case 0x0A: return "InfiniBand-to-PCI Host Bridge";
-                case 0x80: return "Other Bridge Device";
-                default:   return "Unknown Bridge Device";
-            }
-        case 0x07:
-            switch (subclass) {
-                case 0x00: return "Serial Controller";
-                case 0x01: return "Parallel Controller";
-                case 0x02: return "Multiport Serial Controller";
-                case 0x03: return "Modem";
-                case 0x04: return "IEEE 488.1/2 (GPIB) Controller";
-                case 0x05: return "Smart Card Controller";
-                case 0x80: return "Other Communication Controller";
-                default:   return "Unknown Communication Controller";
-            }
-        case 0x08:
-            switch (subclass) {
-                case 0x00: return "Base System Peripheral";
-                case 0x01: return "Interrupt Controller";
-                case 0x02: return "DMA Controller";
-                case 0x03: return "Timer";
-                case 0x04: return "RTC Controller";
-                case 0x80: return "Other System Peripheral";
-                default:   return "Unknown System Peripheral";
-            }
-        case 0x09:
-            switch (subclass) {
-                case 0x00: return "I/O Access Controller";
-                case 0x01: return "I/O Controller";
-                case 0x80: return "Other I/O Controller";
-                default:   return "Unknown I/O Controller";
-            }
-        case 0x0A:
-            switch (subclass) {
-                case 0x00: return "Embedded Controller";
-                case 0x80: return "Other Embedded Controller";
-                default:   return "Unknown Embedded Controller";
-            }
-        case 0x0B:
-            switch (subclass) {
-                case 0x00: return "Processor";
-                case 0x01: return "Co-Processor";
-                case 0x80: return "Other Processor";
-                default:   return "Unknown Processor";
-            }
-        case 0x0C:
-            switch (subclass) {
-                case 0x00: return "Serial Bus Controller";
-                case 0x01: return "FireWire (IEEE 1394) Controller";
-                case 0x02: return "USB Controller";
-                case 0x03: return "Bluetooth Controller";
-                case 0x80: return "Other Serial Bus Controller";
-                default:   return "Unknown Serial Bus Controller";
-            }
-        case 0x0D:
-            switch (subclass) {
-                case 0x00: return "Wireless Controller";
-                case 0x80: return "Other Wireless Controller";
-                default:   return "Unknown Wireless Controller";
-            }
-        case 0x0E:
-            switch (subclass) {
-                case 0x00: return "Satellite Communication Controller";
-                case 0x01: return "Broadband Communication Controller";
-                case 0x80: return "Other Communication Controller";
-                default:   return "Unknown Communication Controller";
-            }
-        case 0x0F:
-            switch (subclass) {
-                case 0x00: return "Signal Processing Controller";
-                case 0x80: return "Other Signal Processing Controller";
-                default:   return "Unknown Signal Processing Controller";
-            }
-        default:
-            return "Unknown Device Class";
-    }
+        // Enable this slot
+        pci_list[idx].enabled = 1;
+
+        // Don't check next function if this device is single-function device
+        uint8_t header = pci_config_get_byte (dev, 0x0e);
+        if ( func == 0 && (header & 0x80) != 0x80) break;
+      } // func
+    } // slot
+  } // bus
+
 }

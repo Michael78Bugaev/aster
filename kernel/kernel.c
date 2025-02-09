@@ -7,11 +7,10 @@
 #include <cpu/pit.h>
 #include <multiboot.h>
 #include <fs/ext2.h>
-#include <fs/initrd.h>
-#include <drv/ata.h>
+#include <drv/ide.h>
 #include <drv/sata.h>
 #include <stdio.h>
-#include <fs/fat32.h>
+#include <cpu/elf.h>
 #include <string.h>
 #include <drv/pci.h>
 #include <config.h>
@@ -28,20 +27,18 @@ void kentr(uint32_t magic, struct multiboot_info* boot_info) {
     init_dmem();
     init_chipset(); 
     pci_init();
-    init_vfs();
-    ata_init();
+    //identify();
     start_global_config();
-    kprint("Example usage of ATA driver \n");
-    uint32_t t = chs_to_lba(0, 0, 0);
-    uint16_t data[4] = {1, 2, 3, 3};
-    if(ata_write(t, 1, data, 4)) {
-        kprint("Write error\n");
-    }
-    uint16_t *tmp = ata_read(t, 0);
-    for (int i = 0; i < strlen(tmp); i++)
-    {
-        printf("%4x\n", tmp[i]);
-    }
+    printf("Initiliazing devices...\n");
+    device_init();
+    // printf("Initializing virtual filesystem...\n");
+    // vfs_init();
+    // ASTERFS_init();
+    // devfs_init();
+    // fat12_init();
+    // ext2_init();
+    ide_init();
+
     sash_shell();
     
 }

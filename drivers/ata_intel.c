@@ -1,111 +1,139 @@
-#include <drv/ata.h>
-#include <stdint.h>
-#include <io/iotools.h>
-#include <stdio.h>
-#include <string.h>
+/******************************************************************************
+ *
+ *  File        : ata.c
+ *  Description : ATA interface
+ *
+ *
+ *****************************************************************************/
+
+#include <drv/ide.h>
+#include <drv/ide_ata.h>
+#include <config.h>
 #include <cpu/mem.h>
+#include <stdio.h>
+#include <drv/pci.h>
+#include <stdint.h>
 
-// Documentation source: https://wiki.osdev.org/ATA_PIO_Mode
+/**
+ *
+ */
+uint32_t ide_ata_access(char direction, ide_drive_t *drive, uint32_t lba_sector, uint32_t sector_count, char *buf) {
+   unsigned char lba_mode /* 0: CHS, 1:LBA28, 2: LBA48 */, dma /* 0: No DMA, 1: DMA */, cmd;
+   unsigned char lba_io[6];
+   unsigned int slavebit = drive->drive_nr;            // Read the Drive [Master/Slave]
+   unsigned int bus = drive->channel->base;            // Bus Base, like 0x1F0 which is also data port.
+   unsigned int words = 256;                           // Almost every ATA drive has a sector-size of 512-byte.
+   unsigned short cyl, i;
+   unsigned char head, sect, err;
 
-void ide_delay(int n)
-{
-	for (int i = 0; i < n; i++)
-		port_byte_in(ATA_SECONDARY_DEVCTL);
-}
+  // Disable IRQ's on channel
+  ide_port_write (drive->channel, IDE_REG_CONTROL, drive->channel->no_int = (ide_irq_invoked = 0x0) + 0x02);
 
-// drive software reset
-void drive_reset() {
-    port_byte_out(ATA_PRIMARY_DEVCTL, 0x04);
-    ide_delay(4);
-    port_byte_out(ATA_PRIMARY_DEVCTL, 0x00);
-}
+  // when we want to read sector 0x10000000 or higher, it can only be done with LBA48
+  if (lba_sector >= 0x10000000) {
+    // lba48
+    lba_mode  = 2;
+    lba_io[0] = (lba_sector & 0x000000FF) >> 0;
+    lba_io[1] = (lba_sector & 0x0000FF00) >> 8;
+    lba_io[2] = (lba_sector & 0x00FF0000) >> 16;
+    lba_io[3] = (lba_sector & 0xFF000000) >> 24;
+    lba_io[4] = 0; // LBA28 is integer, so 32-bits are enough to access 2TB.
+    lba_io[5] = 0; // LBA28 is integer, so 32-bits are enough to access 2TB.
+    head      = 0; // Lower 4-bits of HDDEVSEL are not used here.
+  } else if (drive->capabilities & 0x200)  { // Drive supports LBA?
+    // lba28:
+    lba_mode  = 1;
+    lba_io[0] = (lba_sector & 0x00000FF) >> 0;
+    lba_io[1] = (lba_sector & 0x000FF00) >> 8;
+    lba_io[2] = (lba_sector & 0x0FF0000) >> 16;
+    lba_io[3] = 0; // These Registers are not used here.
+    lba_io[4] = 0; // These Registers are not used here.
+    lba_io[5] = 0; // These Registers are not used here.
+    head      = (lba_sector & 0xF000000) >> 24;
+  } else {
+    // CHS:
+    lba_mode  = 0;
+    sect      = (lba_sector % 63) + 1;
+    cyl       = (lba_sector + 1  - sect) / (16 * 63);
+    lba_io[0] = sect;
+    lba_io[1] = (cyl >> 0) & 0xFF;
+    lba_io[2] = (cyl >> 8) & 0xFF;
+    lba_io[3] = 0;
+    lba_io[4] = 0;
+    lba_io[5] = 0;
+    head      = (lba_sector + 1  - sect) % (16 * 63) / (63); // Head number is written to HDDEVSEL lower 4-bits.
+  }
 
-// chs to LBA
-uint32_t chs_to_lba(uint32_t cylinder, uint32_t head, uint32_t sector) {
-    return (cylinder * 16 + head) * 63 + (sector - 1);
-}
 
-int detect_devtype(int slavebit) {
-    uint32_t REG_CYL_LO=4, REG_CYL_HI=5, REG_DEVSEL=6;
-    /* waits until master drive is ready again */
-	// ata_soft_reset(ctrl->dev_ctl);		
-	port_byte_out(ATA_PRIMARY_IO + REG_DEVSEL, 0xA0 | slavebit<<4);
-    // 400ns seconds delay
-	ide_delay(4);
+  dma = 0; // We don't support DMA
 
-	unsigned cl = port_byte_in(ATA_PRIMARY_IO + REG_CYL_LO);	/* get the "signature bytes" */
-	unsigned ch = port_byte_in(ATA_PRIMARY_IO + REG_CYL_HI);
- 
-	/* differentiate ATA, ATAPI, SATA and SATAPI */
-	if (cl==0x14 && ch==0xEB) return 0;
-	if (cl==0x69 && ch==0x96) return 1;
-	if (cl==0 && ch == 0) return 2;
-	if (cl==0x3c && ch==0xc3) return 3;
-	return -1;
-}
+  while (ide_port_read (drive->channel, IDE_REG_STATUS) & IDE_SR_BSY) ; // Wait if busy.
 
-int ata_poll() {
-    ide_delay(4);
+  if (lba_mode == 0)
+    ide_port_write (drive->channel, IDE_REG_HDDEVSEL, 0xA0 | (slavebit << 4) | head); // Drive & CHS.
+  else
+    ide_port_write (drive->channel, IDE_REG_HDDEVSEL, 0xE0 | (slavebit << 4) | head); // Drive & LBA
 
-    while(port_byte_in(ATA_PRIMARY_IO + ATA_REG_STATUS) & ATA_SR_BSY);
 
-    uint8_t status = port_byte_in(ATA_PRIMARY_IO + ATA_REG_STATUS);
+  // (V) Write Parameters;
+  if (lba_mode == 2) {
+    ide_port_write (drive->channel, IDE_REG_SECCOUNT1,   0);
+    ide_port_write (drive->channel, IDE_REG_LBA3,   lba_io[3]);
+    ide_port_write (drive->channel, IDE_REG_LBA4,   lba_io[4]);
+    ide_port_write (drive->channel, IDE_REG_LBA5,   lba_io[5]);
+  }
+  ide_port_write (drive->channel, IDE_REG_SECCOUNT0, sector_count);
+  ide_port_write (drive->channel, IDE_REG_LBA0,   lba_io[0]);
+  ide_port_write (drive->channel, IDE_REG_LBA1,   lba_io[1]);
+  ide_port_write (drive->channel, IDE_REG_LBA2,   lba_io[2]);
 
-    if (status & ATA_SR_ERR)
-        return 2;
-    
-    if (status & ATA_SR_DF)
-        return 1;
-    
-    if ((status & ATA_SR_DRQ) == 0)
-        return 3;
-    
-    return 0;
-}
+  // Select command depending on the lba mode, dma and direction (read/write)
+  if (lba_mode == 0 && dma == 0 && direction == 0) cmd = IDE_CMD_READ_PIO;
+  if (lba_mode == 1 && dma == 0 && direction == 0) cmd = IDE_CMD_READ_PIO;
+  if (lba_mode == 2 && dma == 0 && direction == 0) cmd = IDE_CMD_READ_PIO_EXT;
+  if (lba_mode == 0 && dma == 1 && direction == 0) cmd = IDE_CMD_READ_DMA;
+  if (lba_mode == 1 && dma == 1 && direction == 0) cmd = IDE_CMD_READ_DMA;
+  if (lba_mode == 2 && dma == 1 && direction == 0) cmd = IDE_CMD_READ_DMA_EXT;
+  if (lba_mode == 0 && dma == 0 && direction == 1) cmd = IDE_CMD_WRITE_PIO;
+  if (lba_mode == 1 && dma == 0 && direction == 1) cmd = IDE_CMD_WRITE_PIO;
+  if (lba_mode == 2 && dma == 0 && direction == 1) cmd = IDE_CMD_WRITE_PIO_EXT;
+  if (lba_mode == 0 && dma == 1 && direction == 1) cmd = IDE_CMD_WRITE_DMA;
+  if (lba_mode == 1 && dma == 1 && direction == 1) cmd = IDE_CMD_WRITE_DMA;
+  if (lba_mode == 2 && dma == 1 && direction == 1) cmd = IDE_CMD_WRITE_DMA_EXT;
+  ide_port_write (drive->channel, IDE_REG_COMMAND, cmd);
 
-uint16_t* ata_read(uint32_t lba, uint8_t sector_num) {
-    port_byte_out(ATA_PRIMARY_IO + ATA_REG_HDDEVSEL, 0xE0 | (uint8_t) (0x00 << 4) | (uint8_t) ((lba >> 24) & 0x0F));
-    port_byte_out(ATA_PRIMARY_IO + ATA_REG_SECCOUNT0, (uint8_t) sector_num);
-    port_byte_out(ATA_PRIMARY_IO + ATA_REG_LBA0, (uint8_t) lba);
-    port_byte_out(ATA_PRIMARY_IO + ATA_REG_LBA1, (uint8_t)(lba >> 8));
-    port_byte_out(ATA_PRIMARY_IO + ATA_REG_LBA2, (uint8_t)(lba >> 16));
-    port_byte_out(ATA_PRIMARY_IO + ATA_REG_COMMAND, (uint8_t) ATA_CMD_READ_PIO);
-
-    if (ata_poll())
-        return NULL;
-
-    uint16_t* data = (uint16_t*) malloc(sizeof(uint16_t) * sector_num * 256);
-    for (int i = 0; i < sector_num * 256; i++) {
-        data[i] = port_word_in(ATA_PRIMARY_IO + ATA_REG_DATA);
+  if (dma) {
+    if (direction == 0) {
+       // @TODO: DMA Read.
+       printf("DMA read is not supported yet.\n");
+    } else {
+      // @TODO: DMA Write.
+      printf("DMA write is not supported yet.\n");
     }
-    return data;
-}
+  } else {
+    if (direction == 0) {
+      char *bufptr = buf;
+      // PIO Read.
+      for (i = 0; i < sector_count; i++) {
+        if ( (err = ide_polling (drive->channel, 1)), err != 0) return err; // Polling, set error and exit if there is.
+        insw (bus, (uint32_t)bufptr, words);
+        bufptr += words*2;
+      }
+    } else {
+      char *bufptr = buf;
+      // PIO Write.
+      for (i = 0; i < sector_count; i++) {
+        ide_polling (drive->channel, 0); // Polling.
+        outsw (bus, (uint32_t)bufptr, words);
+        bufptr += words*2;
+      }
 
-uint8_t ata_write(uint32_t lba, uint8_t sector_num, uint16_t* data, uint8_t size) {
-    port_byte_out(ATA_PRIMARY_IO + ATA_REG_HDDEVSEL, 0xE0 | (uint8_t) (0x00 << 4) | (uint8_t) ((lba >> 24) & 0x0F));
-    port_byte_out(ATA_PRIMARY_IO + ATA_REG_SECCOUNT0, (uint8_t) sector_num);
-    port_byte_out(ATA_PRIMARY_IO + ATA_REG_LBA0, (uint8_t) lba);
-    port_byte_out(ATA_PRIMARY_IO + ATA_REG_LBA1, (uint8_t)(lba >> 8));
-    port_byte_out(ATA_PRIMARY_IO + ATA_REG_LBA2, (uint8_t)(lba >> 16));
-    port_byte_out(ATA_PRIMARY_IO + ATA_REG_COMMAND, (uint8_t) ATA_CMD_WRITE_PIO);
-
-    if (ata_poll())
-        return 1;
-
-    for (int i = 0; i < sector_num * 256; i++) {
-        ata_poll();
-        if (i < size) {
-            port_word_out(ATA_PRIMARY_IO + ATA_REG_DATA, data[i]);
-            continue;
-        }
-        // fill with zeros the rest
-        port_word_out(ATA_PRIMARY_IO + ATA_REG_DATA, (uint16_t) 0x00);
+      // Flush data
+      ide_port_write (drive->channel, IDE_REG_COMMAND, (char []) { IDE_CMD_CACHE_FLUSH, IDE_CMD_CACHE_FLUSH, IDE_CMD_CACHE_FLUSH_EXT }[lba_mode]);
+      ide_polling (drive->channel, 0); // Polling.
     }
-    port_byte_out(ATA_PRIMARY_IO + ATA_REG_COMMAND, ATA_CMD_CACHE_FLUSH); // cache flush
-    ata_poll();
-    return 0;
-}
+  }
 
-void ata_init() {
-    drive_reset();
+  // Return sector count
+  return sector_count;
 }
