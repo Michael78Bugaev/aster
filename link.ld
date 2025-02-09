@@ -3,22 +3,26 @@ ENTRY(start)
 
 SECTIONS
 {
-  . = 1M;
+    . = 0x100000;
 
-  .text :
-  {
-  . = ALIGN(8);
-  KEEP(*(.multiboot))
-    *(.text*)
-    *(.rodata)
-  }
-  .data  :
-  {
-    *(.data)
-  }
+    .multiboot :
+    {
+        *(.multiboot)
+    }
 
-  .bss  :
-  {
-    *(.bss)
-  }
+    .text :
+    {
+        *(.text.entry)
+        *(.text .text.*)
+    }
+
+    .data :
+    {
+        *(.data .data.*)
+    }
+
+    .bss :
+    {
+        *(.bss .bss.*)
+    }
 }

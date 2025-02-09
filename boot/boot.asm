@@ -1,6 +1,6 @@
 BITS 32
 
-section .text
+section .multiboot
     ALIGN 4
     DD 0x1BADB002
     DD 0 ; VBE - 5
@@ -22,6 +22,8 @@ extern kentr
 extern vga_80x50
 extern enter_real_mode
 extern enter_protected_mode
+
+section .text
 
 push ebx
 

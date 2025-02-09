@@ -1,34 +1,56 @@
-include make.cfg
+# Определение переменных
+CC = gcc
+AS = nasm
+LD = ld
+CFLAGS=-c -g -fcommon -Werror -Wimplicit -w -I include/ -ffreestanding -m32 -fno-inline-functions -O2 -fno-omit-frame-pointer
+CPPFLAGS=-c -g -fcommon -Werror -w -I ./include/ -ffreestanding -m32 -fno-inline-functions -O2 -fno-omit-frame-pointer
+ASMFLAGS=-f elf32
+LDFLAGS= -T link.ld --allow-multiple-definition -m elf_i386
 
-$(BUILD_DIR)/AstrKernel: $(BUILD_DIR)/boot.asmo $(BUILD_DIR)/idt.asmo $(BUILD_DIR)/gdt.asmo kernel.o
-	@echo "Linking..."
-	@$(LD) -m elf_i386 $(LDFLAGS) -o $@ $^ progress.o device.o vfs.o fat12.o devfs.o fat12.o asterfs.o ide.o atapi.o fcntl.o ext2.o signal.o proc.o elf.o unistd.o videocard.o ahci_sata_driver.o ata_intel.o multiboot.o nfat.o vbe.o fat32.o dir.o usb.o sedit.o file.o initrd.o pci.o chipset.o cbreak.o config.o iotools.o stdio.o mem.o display.o gdt.o idt.o kb.o string.o pit.o sash.o
+# Определение директорий
+SRC_DIR = .
+BUILD_DIR = build
 
-	@cp $(BUILD_DIR)/AstrKernel $(BUILD_DIR)/iso/boot/AstrKernel
-	@grub-mkrescue -o aster_32-bit.iso $(BUILD_DIR)/iso
-	@qemu-system-i386 -m 7000M -cdrom aster_32-bit.iso
-	@make clean
+# Определение файлов
+C_SOURCES = $(wildcard $(SRC_DIR)/*.c $(SRC_DIR)/*/*.c $(SRC_DIR)/*/*/*.c)
+ASM_SOURCES = $(wildcard $(SRC_DIR)/*.asm $(SRC_DIR)/*/*.asm $(SRC_DIR)/*/*/*.asm)
+C_OBJECTS = $(addprefix $(BUILD_DIR)/, $(notdir $(C_SOURCES:.c=.o)))
+ASM_OBJECTS = $(addprefix $(BUILD_DIR)/, $(notdir $(ASM_SOURCES:.asm=.asmo)))
 
-$(BUILD_DIR)/idt.asmo: $(BOOT_DIR)/idt.asm
-	@echo "Compiling interrupts main file..."
-	@$(AS) $(ASMFLAGS) -o $@ $^
+# Цель по умолчанию
+all: $(BUILD_DIR) kernel
 
-$(BUILD_DIR)/boot.asmo: $(BOOT_DIR)/boot.asm
-	@echo "Compiling multiboot..."
-	@$(AS) $(ASMFLAGS) -o $@ $^
+# Создание директории build
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
 
-$(BUILD_DIR)/gdt.asmo: $(BOOT_DIR)/gdt.asm
-	@echo "Compiling GDT..."
-	@$(AS) $(ASMFLAGS) -o $@ $(BOOT_DIR)/gdt.asm
+# Компилирование C-файлов
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/disk.asmo: $(BOOT_DIR)/disk.asm
-	@echo "Compiling disk driver..."
-	@$(AS) $(ASMFLAGS) -o $@ $(BOOT_DIR)/disk.asm
+$(BUILD_DIR)/%.o: $(SRC_DIR)/*/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-kernel.o:
-	@echo "Compiling kernel..."
-	@$(CC) $(CFLAGS) $(C_FILES)
-	#$(CPP) $(CPPFLAGS) $(CPP_FILES)
+$(BUILD_DIR)/%.o: $(SRC_DIR)/*/*/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
+# Компилирование ASM-файлов
+$(BUILD_DIR)/%.asmo: $(SRC_DIR)/%.asm
+	$(AS) $(ASMFLAGS) $< -o $@
+
+$(BUILD_DIR)/%.asmo: $(SRC_DIR)/*/%.asm
+	$(AS) $(ASMFLAGS) $< -o $@
+
+$(BUILD_DIR)/%.asmo: $(SRC_DIR)/*/*/%.asm
+	$(AS) $(ASMFLAGS) $< -o $@
+
+# Линковка объектных файлов
+kernel: $(C_OBJECTS) $(ASM_OBJECTS)
+	$(LD) $(LDFLAGS) -o $(BUILD_DIR)/kernel $^
+	cp $(BUILD_DIR)/kernel ./iso/boot/aster
+	grub-mkrescue -o aster_32-bit.iso ./iso
+	qemu-system-i386 -cdrom aster_32-bit.iso -m 4096M
+
+# Цель для очистки
 clean:
-	@rm -rf *.o $(BUILD_DIR)/*.asmo
+	rm -rf $(BUILD_DIR)
